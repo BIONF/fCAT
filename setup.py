@@ -42,11 +42,14 @@ setup(
         'ete3',
         'six',
         'greedyFAS>=1.4.0',
-        'fdog>=0.0.8'
+        'fdog>=0.0.8',
+        'rpy2'
     ],
     entry_points={
         'console_scripts': ["fcat = fcatpy.fcat:main",
-                            "fcat.cutoff = fcatpy.calcCutoff:main"],
+                            "fcat.cutoff = fcatpy.calcCutoff:main",
+                            "fcat.ortho = fcatpy.searchOrtho:main",
+                            "fcat.report = fcatpy.assessCompleteness:main"],
     },
     license="GPL-3.0",
     classifiers=[

@@ -82,6 +82,8 @@ def main():
     optional = parser.add_argument_group('optional arguments')
     required.add_argument('-f', '--fasta', help='FASTA file of input taxon', action='store', default='', required=True)
     required.add_argument('-i', '--taxid', help='Taxonomy ID of input taxon', action='store', default='', required=True, type=int)
+    optional.add_argument('-m', '--mode', help='Score cutoff mode. (1) all-vs-all FAS scores, (2) mean FAS of refspec seed, (3) confidence interval of all group FAS scores, (4) mean and stdev of sequence length',
+                            action='store', default='1', choices=[1,2,3,4])
     optional.add_argument('-o', '--outPath', help='Path to output directory', action='store', default='')
     optional.add_argument('-n', '--name', help='Acronym name of input taxon', action='store', default='', type=str)
     optional.add_argument('-v', '--verProt', help='Proteome version', action='store', default=1, type=int)
