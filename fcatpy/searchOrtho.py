@@ -110,6 +110,12 @@ def checkRefspec(refspecList, groupFa):
             return(r)
     return('')
 
+def readRefspecFile(refspecFile):
+    groupRefspec = {}
+    for line in readFile(refspecFile):
+        groupRefspec[line.split('\t')[0]] = line.split('\t')[1].strip()
+    return(groupRefspec)
+
 def prepareJob(coreDir, coreSet, queryID, refspecList, outDir, blastDir, annoDir, annoQuery, force, cpus):
     fdogJobs = []
     ignored = []
@@ -202,21 +208,22 @@ def calcFAS(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
                 for groupID in groups:
                     coreFasDir = '%s/core_orthologs/%s/%s/fas_dir/fasscore_dir' % (coreDir, coreSet, groupID)
                     for fasFile in glob.glob('%s/*.tsv' % coreFasDir):
-                        for fLine in readFile(fasFile):
-                            if refSpec in fLine.split('\t')[0]:
-                                tmp = fLine.split('\t')
-                                revFAS = 0
-                                revFile = '%s/%s.tsv' % (coreFasDir, tmp[0].split('|')[1])
-                                for revLine in readFile(revFile):
-                                    if tmp[1] == revLine.split('\t')[0]:
-                                        revFAS = revLine.split('\t')[2].split('/')[0]
-                                coreLine = '%s\t%s\t%s\t%s\t%s\n' % (groupID, 'ncbi' + str(tmp[1].split('|')[1].split('@')[1]), tmp[1], tmp[2].split('/')[0], revFAS)
-                                finalPhyloprofile.write(coreLine)
+                        if not refSpec in fasFile:
+                            for fLine in readFile(fasFile):
+                                if refSpec in fLine.split('\t')[0]:
+                                    tmp = fLine.split('\t')
+                                    revFAS = 0
+                                    revFile = '%s/%s.tsv' % (coreFasDir, tmp[0].split('|')[1])
+                                    for revLine in readFile(revFile):
+                                        if tmp[1] == revLine.split('\t')[0]:
+                                            revFAS = revLine.split('\t')[2].split('/')[0]
+                                    coreLine = '%s\t%s\t%s\t%s\t%s\n' % (groupID, 'ncbi' + str(tmp[1].split('|')[1].split('@')[1]), tmp[1], tmp[2].split('/')[0], revFAS)
+                                    finalPhyloprofile.write(coreLine)
     if not mode == 0:
         finalPhyloprofile.close()
     return(missing)
 
-def calcFASall(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
+def calcFASall(coreDir, outDir, coreSet, queryID, annoDir, cpus, force, groupRefspec):
     # output files
     phyloprofileDir = '%s/fcatOutput/%s/%s/phyloprofileOutput' % (outDir, coreSet, queryID)
     (mode, phyloprofileDir) = outputMode(outDir, coreSet, queryID, force, 'mode1')
@@ -297,15 +304,17 @@ def calcFASall(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
             meanCoreFile = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir/2.cutoff' % (coreDir, coreSet, groupIDmod)
             for tax in readFile(meanCoreFile):
                 if not tax.split('\t')[0] == 'taxa':
-                    ppCore = '%s\t%s\t%s|1\t%s\n' % (groupIDmod, 'ncbi' + str(tax.split('\t')[0].split('@')[1]), tax.split('\t')[2].strip(), tax.split('\t')[1])
-                    finalPhyloprofile.write(ppCore)
+                    if not tax.split('\t')[0] == groupRefspec[groupIDmod]:
+                        ppCore = '%s\t%s\t%s|1\t%s\n' % (groupIDmod, 'ncbi' + str(tax.split('\t')[0].split('@')[1]), tax.split('\t')[2].strip(), tax.split('\t')[1])
+                        finalPhyloprofile.write(ppCore)
         finalPhyloprofile.close()
         # length phyloprofile file and final fasta file
         for s in SeqIO.parse(mergedFa, 'fasta'):
             idMod = '_'.join(s.id.split('_')[1:])
-            finalFa.write('>%s\n%s\n' % (idMod, s.seq))
-            ppLen = '%s\t%s\t%s\t%s\n' % (idMod.split('|')[0], 'ncbi' + str(idMod.split('|')[1].split('@')[1]), idMod, len(s.seq))
-            finalLen.write(ppLen)
+            if not idMod.split('|')[1] == groupRefspec[idMod.split('|')[0]]:
+                finalFa.write('>%s\n%s\n' % (idMod, s.seq))
+                ppLen = '%s\t%s\t%s\t%s\n' % (idMod.split('|')[0], 'ncbi' + str(idMod.split('|')[1].split('@')[1]), idMod, len(s.seq))
+                finalLen.write(ppLen)
         finalFa.close()
         finalLen.close()
         # join domain files
@@ -401,6 +410,7 @@ def main():
     status = checkResult(fcatOut, force)
 
     print('Preparing...')
+    groupRefspec = {}
     if status == 0:
         (fdogJobs, ignored, groupRefspec) = prepareJob(coreDir, coreSet, queryID, refspecList, outDir, blastDir, annoDir, annoQuery, force, cpus)
         print('Searching orthologs...')
@@ -425,10 +435,13 @@ def main():
         shutil.unpack_archive('%s/fdogOutput.tar.gz' % fcatOut, fcatOut + '/', 'gztar')
 
     if not status == 2:
+        if len(groupRefspec) == 0:
+            if os.path.exists('%s/last_refspec.txt' % fcatOut):
+                groupRefspec = readRefspecFile('%s/last_refspec.txt' % fcatOut)
         print('Calculating pairwise FAS scores between query orthologs and sequences of refspec...')
         missing = calcFAS(coreDir, outDir, coreSet, queryID, annoDir, cpus, force)
         print('Calculating FAS scores between query orthologs and all sequences in each core group...')
-        calcFASall(coreDir, outDir, coreSet, queryID, annoDir, cpus, force)
+        calcFASall(coreDir, outDir, coreSet, queryID, annoDir, cpus, force, groupRefspec)
         # write missing groups
         if len(missing) > 0:
             missingFile = open('%s/fcatOutput/%s/%s/missing.txt' % (outDir, coreSet, queryID), 'w')
