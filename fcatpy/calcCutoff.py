@@ -47,7 +47,7 @@ def prepareJob(coreDir, coreSet, annoDir, blastDir, bidirectional, force, cpus):
                 groupFa = '%s/%s.fa' % (group, groupID)
                 annoDirTmp = '%s/fas_dir/annotation_dir/' % (group)
                 Path(annoDirTmp).mkdir(parents=True, exist_ok=True)
-                outDir = '%s/fas_dir/outTmp/' % (group)
+                outDir = '%s/fas_dir/fasscore_dir/' % (group)
                 Path(outDir).mkdir(parents=True, exist_ok=True)
                 # do annotation for this group
                 if not os.path.exists('%s/%s.json' % (annoDirTmp, groupID)) or force:
@@ -114,7 +114,8 @@ def parseFasOut(fasOutDir, refSpecList):
         if not os.path.exists(fasOut):
             sys.exit('%s not found! Probably calcFAS could not run correctly. Please check again!' % fasOut)
         if not refSpec in fasScores:
-            fasScores[refSpec] = []
+            fasScores[refSpec] = {}
+            fasScores[refSpec]['score'] = []
         if not refSpec in fasScores['all']:
             fasScores['all'][refSpec] = {}
         with open(fasOut, 'r') as file:
@@ -125,19 +126,24 @@ def parseFasOut(fasOutDir, refSpecList):
                         # get query spec ID
                         querySpec = tmp[0].split('|')[1]
                         if not querySpec in fasScores:
-                            fasScores[querySpec] = []
+                            fasScores[querySpec] = {}
+                            fasScores[querySpec]['score'] = []
                         if not querySpec in fasScores['all'][refSpec]:
                             fasScores['all'][refSpec][querySpec] = []
                         # get scores for refSpec vs others
                         scores = tmp[2].split('/')
                         if scores[1] == 'NA':
-                            fasScores[refSpec].append(float(scores[0]))
-                            fasScores[querySpec].append(float(scores[0]))
+                            fasScores[refSpec]['score'].append(float(scores[0]))
+                            fasScores[refSpec]['gene'] = tmp[1]
+                            fasScores[querySpec]['score'].append(float(scores[0]))
+                            fasScores[querySpec]['gene'] = tmp[0]
                             fasScores['all'][refSpec][querySpec].append(float(scores[0]))
                         else:
                             scores = list(map(float, scores))
-                            fasScores[refSpec].append(statistics.mean(scores))
-                            fasScores[querySpec].append(statistics.mean(scores))
+                            fasScores[refSpec]['score'].append(statistics.mean(scores))
+                            fasScores[refSpec]['gene'] = tmp[1]
+                            fasScores[querySpec]['score'].append(statistics.mean(scores))
+                            fasScores[querySpec]['gene'] = tmp[0]
                             fasScores['all'][refSpec][querySpec].append(statistics.mean(scores))
     return(fasScores)
 
@@ -154,16 +160,17 @@ def getGroupPairs(scoreDict):
 def calcCutoff(args):
     (coreDir, coreSet, groupRefSpec, groupID) = args
     EnvStats = importr('EnvStats')
-    cutoffDir = '%s/core_orthologs/%s/%s/fas_dir/score_dir' % (coreDir, coreSet, groupID)
+    cutoffDir = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir' % (coreDir, coreSet, groupID)
     Path(cutoffDir).mkdir(parents=True, exist_ok=True)
     singleOut = open(cutoffDir + '/2.cutoff', 'w')
-    singleOut.write('taxa\tcutoff\n')
+    singleOut.write('taxa\tcutoff\tgene\n')
     groupOut = open(cutoffDir + '/1.cutoff', 'w')
     groupOut.write('label\tvalue\n')
 
     # parse fas output into cutoffs
-    fasOutDir = '%s/core_orthologs/%s/%s/fas_dir/outTmp' % (coreDir, coreSet, groupID)
+    fasOutDir = '%s/core_orthologs/%s/%s/fas_dir/fasscore_dir' % (coreDir, coreSet, groupID)
     fasScores = parseFasOut(fasOutDir, groupRefSpec[groupID])
+    # print(fasScores)
     for key in fasScores:
         if key == 'all':
             groupPair = getGroupPairs(fasScores[key])
@@ -178,7 +185,7 @@ def calcCutoff(args):
             groupOut.write('LCL\t%s\n' % LCL)
             groupOut.write('UCL\t%s\n' % UCL)
         else:
-            singleOut.write('%s\t%s\n' % (key, statistics.mean(fasScores[key])))
+            singleOut.write('%s\t%s\t%s\n' % (key, statistics.mean(fasScores[key]['score']), fasScores[key]['gene']))
     # get mean and stddev length for each group
     groupFa = '%s/core_orthologs/%s/%s/%s.fa' % (coreDir, coreSet, groupID, groupID)
     groupLen = []

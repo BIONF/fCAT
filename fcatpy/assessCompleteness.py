@@ -51,8 +51,9 @@ def mode1(ppFile, coreDir, coreSet, queryID):
     for line in readFile(ppFile):
         groupID = line.split('\t')[0]
         if queryID in line.split('\t')[2]:
-            meanFas = statistics.mean((float(line.split('\t')[3]), float(line.split('\t')[4].strip())))
-            scoreFile = '%s/core_orthologs/%s/%s/fas_dir/score_dir/1.cutoff' % (coreDir, coreSet, groupID)
+            # meanFas = statistics.mean((float(line.split('\t')[3]), float(line.split('\t')[4].strip())))
+            meanFas = float(line.split('\t')[3].strip())
+            scoreFile = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir/1.cutoff' % (coreDir, coreSet, groupID)
             if os.path.exists(scoreFile):
                 meanGroup = 0
                 for l in readFile(scoreFile):
@@ -71,7 +72,7 @@ def mode2(ppFile, coreDir, coreSet, queryID, outDir):
     assessment = {}
     # get refspec for each group
     groupRefspec = {}
-    refspecFile = '%s/%s/%s/%s_refspec.txt' % (outDir, coreSet, queryID, queryID)
+    refspecFile = '%s/%s/%s/last_refspec.txt' % (outDir, coreSet, queryID)
     for g in readFile(refspecFile):
         groupRefspec[g.split('\t')[0]] = g.split('\t')[1]
     # do assessment
@@ -79,7 +80,7 @@ def mode2(ppFile, coreDir, coreSet, queryID, outDir):
         groupID = line.split('\t')[0]
         if queryID in line.split('\t')[2]:
             meanFas = statistics.mean((float(line.split('\t')[3]), float(line.split('\t')[4].strip())))
-            scoreFile = '%s/core_orthologs/%s/%s/fas_dir/score_dir/1.cutoff' % (coreDir, coreSet, groupID)
+            scoreFile = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir/1.cutoff' % (coreDir, coreSet, groupID)
             if os.path.exists(scoreFile):
                 meanRefspec = 0
                 for l in readFile(scoreFile):
@@ -100,7 +101,7 @@ def mode3(ppFile, coreDir, coreSet, queryID):
         groupID = line.split('\t')[0]
         if queryID in line.split('\t')[2]:
             meanFas = statistics.mean((float(line.split('\t')[3]), float(line.split('\t')[4].strip())))
-            scoreFile = '%s/core_orthologs/%s/%s/fas_dir/score_dir/1.cutoff' % (coreDir, coreSet, groupID)
+            scoreFile = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir/1.cutoff' % (coreDir, coreSet, groupID)
             if os.path.exists(scoreFile):
                 LCL = 0
                 UCL = 0
@@ -124,7 +125,7 @@ def mode4(ppFile, coreDir, coreSet, queryID):
         groupID = line.split('\t')[0]
         if queryID in line.split('\t')[2]:
             length = float(line.split('\t')[3].strip())
-            scoreFile = '%s/core_orthologs/%s/%s/fas_dir/score_dir/1.cutoff' % (coreDir, coreSet, groupID)
+            scoreFile = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir/1.cutoff' % (coreDir, coreSet, groupID)
             if os.path.exists(scoreFile):
                 meanLen = 0
                 stdevLen = 0
@@ -150,24 +151,24 @@ def doAssessment(ppDir, coreDir, coreSet, queryID, outDir, mode):
     noCutoff = []
     # assess completeness
     if mode == 1:
-        ppFile = '%s/%s_mode1.phyloprofile' % (ppDir, queryID)
+        ppFile = '%s/mode1.phyloprofile' % (ppDir)
         (assessment, noCutoff) = mode1(ppFile, coreDir, coreSet, queryID)
     elif mode == 2:
-        ppFile = '%s/%s_other.phyloprofile' % (ppDir, queryID)
+        ppFile = '%s/mode23.phyloprofile' % (ppDir)
         (assessment, noCutoff) = mode2(ppFile, coreDir, coreSet, queryID, outDir)
     elif mode == 3:
-        ppFile = '%s/%s_other.phyloprofile' % (ppDir, queryID)
+        ppFile = '%s/mode23.phyloprofile' % (ppDir)
         (assessment, noCutoff) = mode3(ppFile, coreDir, coreSet, queryID)
     elif mode == 4:
-        ppFile = '%s/%s_len.phyloprofile' % (ppDir, queryID)
+        ppFile = '%s/length.phyloprofile' % (ppDir)
         (assessment, noCutoff) = mode4(ppFile, coreDir, coreSet, queryID)
     # print full report
-    writeReport(assessment, outDir, coreDir, coreSet, queryID, mode)
-    return(noCutoff)
+    stat = writeReport(assessment, outDir, coreDir, coreSet, queryID, mode)
+    return(noCutoff, stat)
 
 def writeReport(assessment, outDir, coreDir, coreSet, queryID, mode):
-    missing = '%s/%s/%s/%s_missing.txt' % (outDir, coreSet, queryID, queryID)
-    ignored = '%s/%s/%s/%s_ignored.txt' % (outDir, coreSet, queryID, queryID)
+    missing = '%s/%s/%s/missing.txt' % (outDir, coreSet, queryID)
+    ignored = '%s/%s/%s/ignored.txt' % (outDir, coreSet, queryID)
     Path('%s/%s/%s/mode_%s' % (outDir, coreSet, queryID, mode)).mkdir(parents=True, exist_ok=True)
     # write full report
     fullFile = open('%s/%s/%s/mode_%s/full.txt' % (outDir, coreSet, queryID, mode), 'w')
@@ -180,14 +181,18 @@ def writeReport(assessment, outDir, coreDir, coreSet, queryID, mode):
     fullFile.close()
     # write summary report
     summaryFile = open('%s/%s/%s/mode_%s/summary.txt' % (outDir, coreSet, queryID, mode), 'w')
-    summaryFile.write('genomeID\tsimilar\tdissimilar\tduplicated\tmissing\tignored\ttotal\n')
     type = [x.split('\t')[1] for x in open('%s/%s/%s/mode_%s/full.txt' % (outDir, coreSet, queryID, mode)).readlines()]
     groupID = [x.split('\t')[0] for x in open('%s/%s/%s/mode_%s/full.txt' % (outDir, coreSet, queryID, mode)).readlines()]
     dup = [item for item, count in collections.Counter(groupID).items() if count > 1]
     coreGroups = os.listdir(coreDir + '/core_orthologs/' + coreSet)
-    stat = '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' % (queryID, type.count('similar'), type.count('dissimilar'), len(dup), len(readFile(missing)), len(readFile(ignored)), len(coreGroups))
+    header = 'genomeID\tsimilar\tdissimilar\tduplicated\tmissing\tignored\ttotal'
+    stat = '%s\n%s\t%s\t%s\t%s\t%s\t%s\t%s\n' % (header, queryID, type.count('similar'), type.count('dissimilar'), len(dup), len(readFile(missing)), len(readFile(ignored)), len(coreGroups))
+    if mode == 4:
+        header = 'genomeID\tcomplete\tfragmented\tduplicated\tmissing\tignored\ttotal'
+        stat = '%s\n%s\t%s\t%s\t%s\t%s\t%s\t%s\n' % (header, queryID, type.count('complete'), type.count('fragmented'), len(dup), len(readFile(missing)), len(readFile(ignored)), len(coreGroups))
     summaryFile.write(stat)
     summaryFile.close()
+    return(stat)
 
 def main():
     version = '0.0.1'
@@ -217,9 +222,11 @@ def main():
 
     start = time.time()
 
-    noCutoff = doAssessment(ppDir, coreDir, coreSet, queryID, outDir, mode)
+    (noCutoff, stat) = doAssessment(ppDir, coreDir, coreSet, queryID, outDir, mode)
     if len(noCutoff) > 0:
-        print('\033[92mNo cutoff for %s group(s):\033[0m\n%s' % (len(noCutoff), ','.join(noCutoff)))
+        print('\033[92mWARNING: No cutoff for %s group(s):\033[0m\n%s\n' % (len(noCutoff), ','.join(noCutoff)))
+    if stat:
+        print(stat)
 
     ende = time.time()
     print('Finished in ' + '{:5.3f}s'.format(ende-start))

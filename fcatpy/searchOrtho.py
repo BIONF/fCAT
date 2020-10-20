@@ -25,23 +25,79 @@ import multiprocessing as mp
 import shutil
 from tqdm import tqdm
 import time
+import datetime
 import statistics
+import glob
+import tarfile
 
 def checkFileExist(file, msg):
     if not os.path.exists(os.path.abspath(file)):
         sys.exit('%s not found! %s' % (file, msg))
 
-def parseQueryFa(query, taxid, outDir, doAnno):
-    queryID = ''
-    addTaxon = 'fdog.addTaxon -f %s -i %s -o %s --replace --force' % (query, taxid, outDir)
-    if doAnno == False:
-        addTaxon = addTaxon + ' --noAnno'
+def readFile(file):
+    with open(file, 'r') as f:
+        lines = f.readlines()
+        f.close()
+        return(lines)
+
+def make_archive(source, destination, format):
+        base = os.path.basename(destination)
+        name = base.split('.')[0]
+        ext = '.'.join(base.split('.')[1:3] )
+        archive_from = os.path.dirname(source)
+        archive_to = os.path.basename(source.strip(os.sep))
+        shutil.make_archive(name, format, archive_from, archive_to)
+        shutil.move('%s.%s' % (name, ext), destination)
+
+def isInt(s):
     try:
-        addTaxonOut = subprocess.run([addTaxon], shell=True, capture_output=True, check=True)
-    except:
-        sys.exit('Problem occurred while parsing query fasta file\n%s' % addTaxon)
-    lines = addTaxonOut.stdout.decode().split('\n')
-    queryID = lines[1].split('\t')[1]
+        int(s)
+        return True
+    except ValueError:
+        return False
+
+def checkQueryAnno(annoQuery, annoDir):
+    doAnno = True
+    if not annoQuery == '':
+        annoQuery = os.path.abspath(annoQuery)
+        checkFileExist(annoQuery, '')
+        try:
+            os.symlink(annoQuery, annoDir+'/query.json')
+        except FileExistsError:
+            os.remove(annoDir+'/query.json')
+            os.symlink(annoQuery, annoDir+'/query.json')
+        doAnno = False
+    return(doAnno)
+
+def parseQueryFa(query, taxid, outDir, doAnno, annoDir, cpus):
+    queryID = query.split('/')[-1].split('.')[0]
+    queryIDtmp = queryID.split('@')
+    if not (len(queryIDtmp) == 3 and isInt(queryIDtmp[1])):
+        if taxid == '0':
+            sys.exit('Query taxon does not have suitable ID format (e.g. HUMAN@9606@3). Please provide its taxonomy ID additionaly using --taxid option!')
+        else:
+            addTaxon = 'fdog.addTaxon -f %s -i %s -o %s --replace --force' % (query, taxid, outDir)
+            if doAnno == False:
+                addTaxon = addTaxon + ' --noAnno'
+            try:
+                addTaxonOut = subprocess.run([addTaxon], shell=True, capture_output=True, check=True)
+            except:
+                sys.exit('Problem occurred while parsing query fasta file\n%s' % addTaxon)
+            lines = addTaxonOut.stdout.decode().split('\n')
+            queryID = lines[1].split('\t')[1]
+    else:
+        Path('%s/genome_dir/%s' % (outDir, queryID)).mkdir(parents=True, exist_ok=True)
+        shutil.copy(query, '%s/genome_dir/%s/%s.fa' % (outDir, queryID, queryID))
+        checkedFile = open('%s/genome_dir/%s/%s.fa.checked' % (outDir, queryID, queryID), 'w')
+        now = datetime.datetime.now()
+        checkedFile.write(now.strftime("%Y-%m-%d %H:%M:%S"))
+        checkedFile.close()
+        if doAnno:
+            annoFAS = 'annoFAS -i %s -o %s --cpus %s > /dev/null 2>&1' % (query, annoDir, cpus)
+            try:
+                subprocess.run([annoFAS], shell=True, check=True)
+            except:
+                print('\033[91mProblem occurred while running annoFAS for query protein set\033[0m\n%s' % annoFAS)
     return(queryID)
 
 def checkRefspec(refspecList, groupFa):
@@ -54,28 +110,13 @@ def checkRefspec(refspecList, groupFa):
             return(r)
     return('')
 
-def prepareJob(coreDir, coreSet, query, taxid, refspecList, outDir, blastDir, annoDir, annoQuery, force, cpus):
+def prepareJob(coreDir, coreSet, queryID, refspecList, outDir, blastDir, annoDir, annoQuery, force, cpus):
     fdogJobs = []
     ignored = []
     groupRefspec = {}
-    queryID = ''
     hmmPath = coreDir + '/core_orthologs/' + coreSet
     groups = os.listdir(hmmPath)
     if len(groups) > 0:
-        # get query spec ID and searchpath
-        doAnno = True
-        if not annoQuery == '':
-            annoQuery = os.path.abspath(annoQuery)
-            checkFileExist(annoQuery, '')
-            try:
-                os.symlink(annoQuery, annoDir+'/query.json')
-            except FileExistsError:
-                os.remove(annoDir+'/query.json')
-                os.symlink(annoQuery, annoDir+'/query.json')
-            doAnno = False
-        queryID = parseQueryFa(query, taxid, outDir, doAnno)
-        if doAnno == False:
-            os.rename(annoDir+'/query.json', annoDir+'/'+queryID+'.json')
         searchPath = '%s/genome_dir' % (outDir)
         # create single fdog job for each core group
         for groupID in groups:
@@ -92,7 +133,7 @@ def prepareJob(coreDir, coreSet, query, taxid, refspecList, outDir, blastDir, an
                     groupRefspec[groupID] = refspec
     else:
         sys.exit('No core group found at %s' % (coreDir + '/core_orthologs/' + coreSet))
-    return(fdogJobs, ignored, queryID, groupRefspec)
+    return(fdogJobs, ignored, groupRefspec)
 
 def runFdog(args):
     (seqFile, seqName, refSpec, outPath, blastPath, hmmPath, searchPath, force) = args
@@ -105,7 +146,7 @@ def runFdog(args):
     except:
         print('\033[91mProblem occurred while running fDOG for \'%s\' core group\033[0m\n%s' % (seqName, fdog))
 
-def outputMode(outDir, coreSet, queryID, force, append, approach):
+def outputMode(outDir, coreSet, queryID, force, approach):
     phyloprofileDir = '%s/fcatOutput/%s/%s/phyloprofileOutput' % (outDir, coreSet, queryID)
     Path(phyloprofileDir).mkdir(parents=True, exist_ok=True)
     if not os.path.exists('%s/%s_%s.phyloprofile' % (phyloprofileDir, coreSet, approach)):
@@ -113,26 +154,20 @@ def outputMode(outDir, coreSet, queryID, force, append, approach):
     else:
         if force:
             mode = 1
-        elif append:
-            mode = 2
         else:
             mode = 0
     return(mode, phyloprofileDir)
 
-def calcFAS(outDir, coreSet, queryID, annoDir, cpus, force, append, cleanup):
+def calcFAS(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
     # output files
-    missingFile = open('%s/fcatOutput/%s/%s/%s_missing.txt' % (outDir, coreSet, queryID, queryID), 'w')
-    (mode, phyloprofileDir) = outputMode(outDir, coreSet, queryID, force, append, 'other')
+    (mode, phyloprofileDir) = outputMode(outDir, coreSet, queryID, force, 'other')
     if mode == 1 or mode == 3:
-        finalPhyloprofile = open('%s/%s_other.phyloprofile' % (phyloprofileDir, queryID), 'w')
+        finalPhyloprofile = open('%s/mode23.phyloprofile' % (phyloprofileDir), 'w')
         finalPhyloprofile.write('geneID\tncbiID\torthoID\tFAS_F\tFAS_B\n')
-        finalFwdDomain = open('%s/%s_other_forward.domains' % (phyloprofileDir, queryID), 'wb')
-        finalRevDomain = open('%s/%s_other_reverse.domains' % (phyloprofileDir, queryID), 'wb')
     elif mode == 2:
-        finalPhyloprofile = open('%s/%s_other.phyloprofile' % (phyloprofileDir, queryID), 'a')
-        finalFwdDomain = open('%s/%s_other_forward.domains' % (phyloprofileDir, queryID), 'ab')
-        finalRevDomain = open('%s/%s_other_reverse.domains' % (phyloprofileDir, queryID), 'ab')
+        finalPhyloprofile = open('%s/mode23.phyloprofile' % (phyloprofileDir), 'a')
     # parse single fdog output
+    missing = []
     fdogOutDir = '%s/fcatOutput/%s/%s/fdogOutput' % (outDir, coreSet, queryID)
     out = os.listdir(fdogOutDir)
     for refSpec in out:
@@ -149,7 +184,7 @@ def calcFAS(outDir, coreSet, queryID, annoDir, cpus, force, append, cleanup):
                         if os.path.exists(singleFa):
                             shutil.copyfileobj(open(singleFa, 'rb'), mergedFaFile)
                         else:
-                            missingFile.write(groupID + '\n')
+                            missing.append(groupID)
                 mergedFaFile.close()
                 # calculate fas scores for merged extended.fa using fdogFAS
                 fdogFAS = 'fdogFAS -i %s -w %s --cores %s' % (mergedFa, annoDir, cpus)
@@ -160,44 +195,43 @@ def calcFAS(outDir, coreSet, queryID, annoDir, cpus, force, append, cleanup):
             # move to phyloprofile output dir
             if not mode == 0:
                 if os.path.exists('%s/%s.phyloprofile' % (refDir, refSpec)):
-                    with open('%s/%s.phyloprofile' % (refDir, refSpec), 'r') as f:
-                        lines = f.readlines()
-                        f.close()
-                        for line in lines:
-                            if queryID in line:
-                                finalPhyloprofile.write(line)
-                    shutil.copyfileobj(open('%s/%s_forward.domains' % (refDir, refSpec), 'rb'), finalFwdDomain)
-                    shutil.copyfileobj(open('%s/%s_reverse.domains' % (refDir, refSpec), 'rb'), finalRevDomain)
-            # remove files
-            if cleanup:
-                for r in Path(refDir).glob('%s.*' % refSpec):
-                    r.unlink()
-                for r in Path(refDir).glob('%s*.domains' % refSpec):
-                    r.unlink()
+                    for line in readFile('%s/%s.phyloprofile' % (refDir, refSpec)):
+                        if queryID in line:
+                            finalPhyloprofile.write(line)
+                # append profile of core sequences
+                for groupID in groups:
+                    coreFasDir = '%s/core_orthologs/%s/%s/fas_dir/fasscore_dir' % (coreDir, coreSet, groupID)
+                    for fasFile in glob.glob('%s/*.tsv' % coreFasDir):
+                        for fLine in readFile(fasFile):
+                            if refSpec in fLine.split('\t')[0]:
+                                tmp = fLine.split('\t')
+                                revFAS = 0
+                                revFile = '%s/%s.tsv' % (coreFasDir, tmp[0].split('|')[1])
+                                for revLine in readFile(revFile):
+                                    if tmp[1] == revLine.split('\t')[0]:
+                                        revFAS = revLine.split('\t')[2].split('/')[0]
+                                coreLine = '%s\t%s\t%s\t%s\t%s\n' % (groupID, 'ncbi' + str(tmp[1].split('|')[1].split('@')[1]), tmp[1], tmp[2].split('/')[0], revFAS)
+                                finalPhyloprofile.write(coreLine)
     if not mode == 0:
         finalPhyloprofile.close()
-        finalFwdDomain.close()
-        finalRevDomain.close()
-    missingFile.close()
+    return(missing)
 
-def calcFASall(coreDir, outDir, coreSet, queryID, annoDir, cpus, force, append, cleanup):
+def calcFASall(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
     # output files
     phyloprofileDir = '%s/fcatOutput/%s/%s/phyloprofileOutput' % (outDir, coreSet, queryID)
-    (mode, phyloprofileDir) = outputMode(outDir, coreSet, queryID, force, append, 'mode1')
+    (mode, phyloprofileDir) = outputMode(outDir, coreSet, queryID, force, 'mode1')
     if mode == 1 or mode == 3:
-        finalFa = open('%s/%s.mod.fa' % (phyloprofileDir, queryID), 'w')
-        finalLen = open('%s/%s_len.phyloprofile' % (phyloprofileDir, queryID), 'w')
-        finalLen.write('geneID\tncbiID\torthoID\tFAS_F\tFAS_B\n')
-        finalFwdDomain = open('%s/%s_mode1_forward.domains' % (phyloprofileDir, queryID), 'wb')
-        finalRevDomain = open('%s/%s_mode1_reverse.domains' % (phyloprofileDir, queryID), 'wb')
-        finalPhyloprofile = open('%s/%s_mode1.phyloprofile' % (phyloprofileDir, queryID), 'w')
-        finalPhyloprofile.write('geneID\tncbiID\torthoID\tFAS_F\tFAS_B\n')
+        finalFa = open('%s/%s.mod.fa' % (phyloprofileDir, coreSet), 'w')
+        finalFwdDomain = open('%s/FAS_forward.domains' % (phyloprofileDir), 'wb')
+        finalPhyloprofile = open('%s/mode1.phyloprofile' % (phyloprofileDir), 'w')
+        finalPhyloprofile.write('geneID\tncbiID\torthoID\tFAS_MEAN\n')
+        finalLen = open('%s/length.phyloprofile' % (phyloprofileDir), 'w')
+        finalLen.write('geneID\tncbiID\torthoID\tLength\n')
     elif mode == 2:
-        finalFa = open('%s/%s.mod.fa' % (phyloprofileDir, queryID), 'a')
-        finalFa = open('%s/%s_len.phyloprofile' % (phyloprofileDir, coreSet), 'a')
-        finalFwdDomain = open('%s/%s_mode1_forward.domains' % (phyloprofileDir, queryID), 'ab')
-        finalRevDomain = open('%s/%s_mode1_reverse.domains' % (phyloprofileDir, queryID), 'ab')
-        finalPhyloprofile = open('%s/%s_mode1.phyloprofile' % (phyloprofileDir, queryID), 'a')
+        finalFa = open('%s/%s.mod.fa' % (phyloprofileDir, coreSet), 'a')
+        finalFwdDomain = open('%s/FAS_forward.domains' % (phyloprofileDir), 'ab')
+        finalPhyloprofile = open('%s/mode1.phyloprofile' % (phyloprofileDir), 'a')
+        finalLen = open('%s/length.phyloprofile' % (phyloprofileDir), 'a')
     # create file for fdogFAS
     fdogOutDir = '%s/fcatOutput/%s/%s/fdogOutput' % (outDir, coreSet, queryID)
     mergedFa = '%s/%s_all.extended.fa' % (fdogOutDir, queryID)
@@ -227,10 +261,8 @@ def calcFASall(coreDir, outDir, coreSet, queryID, annoDir, cpus, force, append, 
                                     mergedFaFile.write('>%s\n%s\n' % (id, s.seq))
                                     for c in SeqIO.parse(groupFa, 'fasta'):
                                         mergedFaFile.write('>%s_%s|1\n%s\n' % (count[groupID], c.id, c.seq))
-                                    # also write to final fasta file
-                                    if not mode == 0:
-                                        finalFa.write('>%s\n%s\n' % (s.id, s.seq))
-                                        finalLen.write('%s\t%s\t%s\t%s\n' % (groupID, 'ncbi' + str(queryID.split('@')[1]), s.id, len(s.seq)))
+                        # delete single fdog out
+                        # shutil.rmtree('%s/%s' % (refDir, groupID))
         mergedFaFile.close()
         # calculate fas scores for merged _all.extended.fa using fdogFAS
         fdogFAS = 'fdogFAS -i %s -w %s --cores %s' % (mergedFa, annoDir, cpus)
@@ -240,40 +272,70 @@ def calcFASall(coreDir, outDir, coreSet, queryID, annoDir, cpus, force, append, 
             print('\033[91mProblem occurred while running fdogFAS for \'%s\'\033[0m\n%s' % (mergedFa, fdogFAS))
     # move to phyloprofile output dir
     if not mode == 0:
+        # phyloprofile file
         groupScoreFwd = {}
         groupScoreRev = {}
         groupOrtho = {}
-        with open('%s/%s_all.phyloprofile' % (fdogOutDir, queryID), 'r') as f:
-            lines = f.readlines()
-            f.close()
-            for line in lines:
-                if not line.split('\t')[0] == 'geneID':
-                    groupID = line.split('\t')[0]
-                    if not groupID in groupScoreFwd:
-                        groupScoreFwd[groupID] = []
-                        groupScoreRev[groupID] = []
-                    if queryID in line.split('\t')[2]:
-                        groupOrtho[groupID] = line.split('\t')[2]
-                    else:
-                        groupScoreFwd[groupID].append(float(line.split('\t')[3]))
-                        groupScoreRev[groupID].append(float(line.split('\t')[4]))
+        for line in readFile('%s/%s_all.phyloprofile' % (fdogOutDir, queryID)):
+            if not line.split('\t')[0] == 'geneID':
+                groupID = line.split('\t')[0]
+                if not groupID in groupScoreFwd:
+                    groupScoreFwd[groupID] = []
+                    groupScoreRev[groupID] = []
+                if queryID in line.split('\t')[2]:
+                    groupOrtho[groupID] = line.split('\t')[2]
+                else:
+                    groupScoreFwd[groupID].append(float(line.split('\t')[3]))
+                    groupScoreRev[groupID].append(float(line.split('\t')[4]))
         for groupID in groupOrtho:
+            # calculate mean fas score for ortholog
             groupIDmod = '_'.join(groupID.split('_')[1:])
             groupOrthoMod = '_'.join(groupOrtho[groupID].split('_')[1:])
-            newline = '%s\t%s\t%s\t%s\t%s\n' % (groupIDmod, 'ncbi' + str(queryID.split('@')[1]), groupOrthoMod, statistics.mean(groupScoreFwd[groupID]), statistics.mean(groupScoreRev[groupID]))
+            newline = '%s\t%s\t%s\t%s\n' % (groupIDmod, 'ncbi' + str(queryID.split('@')[1]), groupOrthoMod, statistics.mean((statistics.mean(groupScoreFwd[groupID]), statistics.mean(groupScoreRev[groupID]))))
             finalPhyloprofile.write(newline)
-        shutil.copyfileobj(open('%s/%s_all_forward.domains' % (fdogOutDir, queryID), 'rb'), finalFwdDomain)
-        shutil.copyfileobj(open('%s/%s_all_reverse.domains' % (fdogOutDir, queryID), 'rb'), finalRevDomain)
-
+            # append profile of core sequences
+            meanCoreFile = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir/2.cutoff' % (coreDir, coreSet, groupIDmod)
+            for tax in readFile(meanCoreFile):
+                if not tax.split('\t')[0] == 'taxa':
+                    ppCore = '%s\t%s\t%s|1\t%s\n' % (groupIDmod, 'ncbi' + str(tax.split('\t')[0].split('@')[1]), tax.split('\t')[2].strip(), tax.split('\t')[1])
+                    finalPhyloprofile.write(ppCore)
+        finalPhyloprofile.close()
+        # length phyloprofile file and final fasta file
+        for s in SeqIO.parse(mergedFa, 'fasta'):
+            idMod = '_'.join(s.id.split('_')[1:])
+            finalFa.write('>%s\n%s\n' % (idMod, s.seq))
+            ppLen = '%s\t%s\t%s\t%s\n' % (idMod.split('|')[0], 'ncbi' + str(idMod.split('|')[1].split('@')[1]), idMod, len(s.seq))
+            finalLen.write(ppLen)
         finalFa.close()
         finalLen.close()
-        finalPhyloprofile.close()
+        # join domain files
+        shutil.copyfileobj(open('%s/%s_all_forward.domains' % (fdogOutDir, queryID), 'rb'), finalFwdDomain)
         finalFwdDomain.close()
-        finalRevDomain.close()
-    # remove files
-    if cleanup:
-        for r in Path(fdogOutDir).glob('%s_all*' % queryID):
-            r.unlink()
+        finalDomain = open('%s/FAS.domains' % (phyloprofileDir), 'w')
+        for domains in readFile('%s/FAS_forward.domains' % (phyloprofileDir)):
+            tmp = domains.split('\t')
+            mGroup = '_'.join(tmp[0].split('#')[0].split('_')[1:])
+            mQuery = '_'.join(tmp[0].split('#')[1].split('_')[1:])
+            mSeed = '_'.join(tmp[1].split('_')[1:])
+            domainLine = '%s\t%s\t%s\t%s\t%s\t%s\tNA\tN\n' % (mGroup+'#'+mQuery, mSeed, tmp[2], tmp[3], tmp[4], tmp[5])
+            finalDomain.write(domainLine)
+        finalDomain.close()
+        os.remove('%s/FAS_forward.domains' % (phyloprofileDir))
+
+def checkResult(fcatOut, force):
+    if force:
+        shutil.rmtree(fcatOut)
+        return(0)
+    else:
+        if not os.path.exists('%s/phyloprofileOutput/mode1.phyloprofile' % fcatOut):
+            if os.path.exists('%s/fdogOutput.tar.gz' % fcatOut):
+                return(1)
+            else:
+                if os.path.exists(fcatOut):
+                    shutil.rmtree(fcatOut)
+                return(0)
+        else:
+            return(2)
 
 def main():
     version = '0.0.1'
@@ -284,14 +346,13 @@ def main():
     required.add_argument('-c', '--coreSet', help='Name of core set, which is subfolder within coreDir/core_orthologs/ directory', action='store', default='', required=True)
     required.add_argument('-r', '--refspecList', help='List of reference species', action='store', default='')
     required.add_argument('-q', '--querySpecies', help='Path to gene set for species of interest', action='store', default='')
-    required.add_argument('-i', '--taxid', help='Taxonomy ID of gene set for species of interest', action='store', default='', required=True, type=int)
     optional.add_argument('-o', '--outDir', help='Path to output directory', action='store', default='')
     optional.add_argument('-b', '--blastDir', help='Path to BLAST directory of all core species', action='store', default='')
-    optional.add_argument('-w', '--annoDir', help='Path to FAS annotation directory', action='store', default='')
-    optional.add_argument('-a', '--annoQuery', help='Path to FAS annotation for species of interest', action='store', default='')
+    optional.add_argument('-a', '--annoDir', help='Path to FAS annotation directory', action='store', default='')
+    optional.add_argument('--annoQuery', help='Path to FAS annotation for species of interest', action='store', default='')
+    optional.add_argument('-i', '--taxid', help='Taxonomy ID of gene set for species of interest', action='store', default=0, type=int)
     optional.add_argument('--cpus', help='Number of CPUs used for annotation. Default = 4', action='store', default=4, type=int)
     optional.add_argument('--force', help='Force overwrite existing data', action='store_true', default=False)
-    optional.add_argument('--append', help='Append to existing phyloprofile data', action='store_true', default=False)
     optional.add_argument('--cleanup', help='Delete temporary phyloprofile data', action='store_true', default=False)
 
     args = parser.parse_args()
@@ -325,40 +386,72 @@ def main():
     if cpus >= mp.cpu_count():
         cpus = mp.cpu_count()-1
     force = args.force
-    append = args.append
     cleanup = args.cleanup
 
     start = time.time()
+
+    # check annotation of query species and get query ID
+    doAnno = checkQueryAnno(annoQuery, annoDir)
+    queryID = parseQueryFa(query, taxid, outDir, doAnno, annoDir, cpus)
+    if doAnno == False:
+        os.rename(annoDir+'/query.json', annoDir+'/'+queryID+'.json')
+
+    # check old output files
+    fcatOut = '%s/fcatOutput/%s/%s' % (outDir, coreSet, queryID)
+    status = checkResult(fcatOut, force)
+
     print('Preparing...')
-    (fdogJobs, ignored, queryID, groupRefspec) = prepareJob(coreDir, coreSet, query, taxid, refspecList, outDir, blastDir, annoDir, annoQuery, force, cpus)
+    if status == 0:
+        (fdogJobs, ignored, groupRefspec) = prepareJob(coreDir, coreSet, queryID, refspecList, outDir, blastDir, annoDir, annoQuery, force, cpus)
+        print('Searching orthologs...')
+        pool = mp.Pool(cpus)
+        fdogOut = []
+        for _ in tqdm(pool.imap_unordered(runFdog, fdogJobs), total=len(fdogJobs)):
+            fdogOut.append(_)
+        # write ignored groups and refspec for each group based on given refspec list
+        if len(ignored) > 0:
+            # print('\033[92mNo species in %s found in core set(s): %s\033[0m' % (refspecList, ','.join(ignored)))
+            ignoredFile = open('%s/fcatOutput/%s/%s/ignored.txt' % (outDir, coreSet, queryID), 'w')
+            ignoredFile.write('\n'.join(ignored))
+            ignoredFile.write('\n')
+            ignoredFile.close()
+        if len(groupRefspec) > 0:
+            refspecFile = open('%s/fcatOutput/%s/%s/last_refspec.txt' % (outDir, coreSet, queryID), 'w')
+            for g in groupRefspec:
+                refspecFile.write('%s\t%s\n' % (g, groupRefspec[g]))
+            refspecFile.close()
+    elif status == 1:
+        # untar old fdog output to create phyloprofile files
+        shutil.unpack_archive('%s/fdogOutput.tar.gz' % fcatOut, fcatOut + '/', 'gztar')
 
-    print('Searching orthologs...')
-    pool = mp.Pool(cpus)
-    fdogOut = []
-    for _ in tqdm(pool.imap_unordered(runFdog, fdogJobs), total=len(fdogJobs)):
-        fdogOut.append(_)
+    if not status == 2:
+        print('Calculating pairwise FAS scores between query orthologs and sequences of refspec...')
+        missing = calcFAS(coreDir, outDir, coreSet, queryID, annoDir, cpus, force)
+        print('Calculating FAS scores between query orthologs and all sequences in each core group...')
+        calcFASall(coreDir, outDir, coreSet, queryID, annoDir, cpus, force)
+        # write missing groups
+        if len(missing) > 0:
+            missingFile = open('%s/fcatOutput/%s/%s/missing.txt' % (outDir, coreSet, queryID), 'w')
+            missingFile.write('\n'.join(missing))
+            missingFile.write('\n')
+            missingFile.close()
+
+    if os.path.exists('%s/fdogOutput' % fcatOut):
+        try:
+            make_archive('%s/fdogOutput' % fcatOut, '%s/fdogOutput.tar.gz' % fcatOut, 'gztar')
+        except:
+            print('Cannot archiving fdog output!')
+
     if cleanup:
-        shutil.rmtree('%s/genome_dir' % (outDir))
-
-    print('Calculating pairwise FAS scores between query orthologs and sequences of refspec...')
-    calcFAS(outDir, coreSet, queryID, annoDir, cpus, force, append, cleanup)
-    print('Calculating FAS scores between query orthologs and all sequences in each core group...')
-    calcFASall(coreDir, outDir, coreSet, queryID, annoDir, cpus, force, append, cleanup)
-
-    if len(ignored) > 0:
-        print('\033[92mNo species in %s found in core set(s): %s\033[0m' % (refspecList, ','.join(ignored)))
-        ignoredFile = open('%s/fcatOutput/%s/%s/%s_ignored.txt' % (outDir, coreSet, queryID, queryID), 'w')
-        ignoredFile.write('\n'.join(ignored))
-        ignoredFile.close()
-
-    if len(groupRefspec) > 0:
-        refspecFile = open('%s/fcatOutput/%s/%s/%s_refspec.txt' % (outDir, coreSet, queryID, queryID), 'w')
-        for g in groupRefspec:
-            refspecFile.write('%s\t%s\n' % (g, groupRefspec[g]))
-        refspecFile.close()
+        print('Cleaning up...')
+        if os.path.exists('%s/genome_dir' % (outDir)):
+            shutil.rmtree('%s/genome_dir' % (outDir))
+        if os.path.exists('%s/fdogOutput/' % (fcatOut)):
+            shutil.rmtree('%s/fdogOutput/' % (fcatOut))
 
     ende = time.time()
     print('Finished in ' + '{:5.3f}s'.format(ende-start))
+    print('Check output in %s' % fcatOut)
 
 if __name__ == '__main__':
     main()
