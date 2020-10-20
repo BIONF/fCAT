@@ -27,7 +27,7 @@ from tqdm import tqdm
 import time
 import statistics
 from scipy import stats
-from rpy2.robjects import FloatVector, r
+from rpy2.robjects import FloatVector
 from rpy2.robjects.packages import importr
 
 def checkFileExist(file):
@@ -197,21 +197,7 @@ def calcCutoff(args):
     singleOut.close()
     groupOut.close()
 
-def main():
-    version = '0.0.1'
-    parser = argparse.ArgumentParser(description='You are running calcCutoff version ' + str(version) + '.')
-    required = parser.add_argument_group('required arguments')
-    optional = parser.add_argument_group('optional arguments')
-    required.add_argument('-d', '--coreDir', help='Path to core set directory, where folder core_orthologs can be found', action='store', default='', required=True)
-    required.add_argument('-c', '--coreSet', help='Name of core set, which is subfolder within coreDir/core_orthologs/ directory', action='store', default='', required=True)
-    optional.add_argument('-a', '--annoDir', help='Path to FAS annotation directory', action='store', default='')
-    optional.add_argument('-b', '--blastDir', help='Path to BLAST directory of all core species', action='store', default='')
-    optional.add_argument('--cpus', help='Number of CPUs used for annotation. Default = 4', action='store', default=4, type=int)
-    optional.add_argument('--bidirectional', help=argparse.SUPPRESS, action='store_true', default=False)
-    optional.add_argument('--force', help='Force overwrite existing data', action='store_true', default=False)
-
-    args = parser.parse_args()
-
+def calcGroupCutoff(args):
     coreDir = os.path.abspath(args.coreDir)
     coreSet = args.coreSet
     checkFileExist(coreDir + '/core_orthologs/' + coreSet)
@@ -231,7 +217,6 @@ def main():
     bidirectional = args.bidirectional
     force = args.force
 
-    start = time.time()
     print('Preparing...')
     (fasJobs, groupRefSpec) = prepareJob(coreDir, coreSet, annoDir, blastDir, bidirectional, force, cpus)
 
@@ -249,8 +234,25 @@ def main():
     for _ in tqdm(pool.imap_unordered(calcCutoff, cutoffJobs), total=len(cutoffJobs)):
         cutoffOut.append(_)
 
+def main():
+    version = '0.0.1'
+    parser = argparse.ArgumentParser(description='You are running calcCutoff version ' + str(version) + '.')
+    required = parser.add_argument_group('required arguments')
+    optional = parser.add_argument_group('optional arguments')
+    required.add_argument('-d', '--coreDir', help='Path to core set directory, where folder core_orthologs can be found', action='store', default='', required=True)
+    required.add_argument('-c', '--coreSet', help='Name of core set, which is subfolder within coreDir/core_orthologs/ directory', action='store', default='', required=True)
+    optional.add_argument('-a', '--annoDir', help='Path to FAS annotation directory', action='store', default='')
+    optional.add_argument('-b', '--blastDir', help='Path to BLAST directory of all core species', action='store', default='')
+    optional.add_argument('--cpus', help='Number of CPUs used for annotation. Default = 4', action='store', default=4, type=int)
+    optional.add_argument('--bidirectional', help=argparse.SUPPRESS, action='store_true', default=False)
+    optional.add_argument('--force', help='Force overwrite existing data', action='store_true', default=False)
+    args = parser.parse_args()
+
+    start = time.time()
+    calcGroupCutoff(args)
     ende = time.time()
     print('Finished in ' + '{:5.3f}s'.format(ende-start))
+
 
 
 if __name__ == '__main__':

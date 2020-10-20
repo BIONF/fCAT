@@ -346,26 +346,7 @@ def checkResult(fcatOut, force):
         else:
             return(2)
 
-def main():
-    version = '0.0.1'
-    parser = argparse.ArgumentParser(description='You are running searchOrtho version ' + str(version) + '.')
-    required = parser.add_argument_group('required arguments')
-    optional = parser.add_argument_group('optional arguments')
-    required.add_argument('-d', '--coreDir', help='Path to core set directory, where folder core_orthologs can be found', action='store', default='', required=True)
-    required.add_argument('-c', '--coreSet', help='Name of core set, which is subfolder within coreDir/core_orthologs/ directory', action='store', default='', required=True)
-    required.add_argument('-r', '--refspecList', help='List of reference species', action='store', default='')
-    required.add_argument('-q', '--querySpecies', help='Path to gene set for species of interest', action='store', default='')
-    optional.add_argument('-o', '--outDir', help='Path to output directory', action='store', default='')
-    optional.add_argument('-b', '--blastDir', help='Path to BLAST directory of all core species', action='store', default='')
-    optional.add_argument('-a', '--annoDir', help='Path to FAS annotation directory', action='store', default='')
-    optional.add_argument('--annoQuery', help='Path to FAS annotation for species of interest', action='store', default='')
-    optional.add_argument('-i', '--taxid', help='Taxonomy ID of gene set for species of interest', action='store', default=0, type=int)
-    optional.add_argument('--cpus', help='Number of CPUs used for annotation. Default = 4', action='store', default=4, type=int)
-    optional.add_argument('--force', help='Force overwrite existing data', action='store_true', default=False)
-    optional.add_argument('--cleanup', help='Delete temporary phyloprofile data', action='store_true', default=False)
-
-    args = parser.parse_args()
-
+def searchOrtho(args):
     coreDir = os.path.abspath(args.coreDir)
     coreSet = args.coreSet
     checkFileExist(coreDir + '/core_orthologs/' + coreSet, '')
@@ -396,8 +377,6 @@ def main():
         cpus = mp.cpu_count()-1
     force = args.force
     cleanup = args.cleanup
-
-    start = time.time()
 
     # check annotation of query species and get query ID
     doAnno = checkQueryAnno(annoQuery, annoDir)
@@ -461,10 +440,31 @@ def main():
             shutil.rmtree('%s/genome_dir' % (outDir))
         if os.path.exists('%s/fdogOutput/' % (fcatOut)):
             shutil.rmtree('%s/fdogOutput/' % (fcatOut))
+    print('Done! Check output in %s' % fcatOut)
 
+def main():
+    version = '0.0.1'
+    parser = argparse.ArgumentParser(description='You are running searchOrtho version ' + str(version) + '.')
+    required = parser.add_argument_group('required arguments')
+    optional = parser.add_argument_group('optional arguments')
+    required.add_argument('-d', '--coreDir', help='Path to core set directory, where folder core_orthologs can be found', action='store', default='', required=True)
+    required.add_argument('-c', '--coreSet', help='Name of core set, which is subfolder within coreDir/core_orthologs/ directory', action='store', default='', required=True)
+    required.add_argument('-r', '--refspecList', help='List of reference species', action='store', default='')
+    required.add_argument('-q', '--querySpecies', help='Path to gene set for species of interest', action='store', default='')
+    optional.add_argument('-o', '--outDir', help='Path to output directory', action='store', default='')
+    optional.add_argument('-b', '--blastDir', help='Path to BLAST directory of all core species', action='store', default='')
+    optional.add_argument('-a', '--annoDir', help='Path to FAS annotation directory', action='store', default='')
+    optional.add_argument('--annoQuery', help='Path to FAS annotation for species of interest', action='store', default='')
+    optional.add_argument('-i', '--taxid', help='Taxonomy ID of gene set for species of interest', action='store', default=0, type=int)
+    optional.add_argument('--cpus', help='Number of CPUs used for annotation. Default = 4', action='store', default=4, type=int)
+    optional.add_argument('--force', help='Force overwrite existing data', action='store_true', default=False)
+    optional.add_argument('--cleanup', help='Delete temporary phyloprofile data', action='store_true', default=False)
+    args = parser.parse_args()
+
+    start = time.time()
+    searchOrtho(args)
     ende = time.time()
     print('Finished in ' + '{:5.3f}s'.format(ende-start))
-    print('Check output in %s' % fcatOut)
 
 if __name__ == '__main__':
     main()

@@ -195,6 +195,36 @@ def writeReport(assessment, outDir, coreDir, coreSet, queryID, mode):
     summaryFile.close()
     return(stat)
 
+def assessCompteness(args):
+    coreDir = os.path.abspath(args.coreDir)
+    coreSet = args.coreSet
+    checkFileExist(coreDir + '/core_orthologs/' + coreSet, '')
+    mode = args.mode
+    queryID = args.queryID
+    outDir = os.path.abspath(args.outDir)
+    if not 'fcatOutput' in outDir:
+        outDir = outDir + '/fcatOutput'
+    ppDir = '%s/%s/%s/phyloprofileOutput' % (outDir, coreSet, queryID)
+    checkFileExist(os.path.abspath(ppDir), 'No phylogenetic profile folder found!')
+    mode = args.mode
+    force = args.force
+    # do assessment and print report
+    (noCutoff, stat) = doAssessment(ppDir, coreDir, coreSet, queryID, outDir, mode)
+    if len(noCutoff) > 0:
+        print('\033[92mWARNING: No cutoff for %s group(s):\033[0m\n%s\n' % (len(noCutoff), ','.join(noCutoff)))
+    if stat:
+        print(stat)
+    # merge all report (if available)
+    modes = ('mode_1', 'mode_2', 'mode_3', 'mode_4')
+    mergedStat = open('%s/%s/%s/all_summary.txt' % (outDir, coreSet, queryID), 'w')
+    mergedStat.write('mode\tgenomeID\tsimilar\tdissimilar\tduplicated\tmissing\tignored\ttotal\n')
+    for m in modes:
+        if os.path.exists('%s/%s/%s/%s/summary.txt' % (outDir, coreSet, queryID, m)):
+            for line in readFile('%s/%s/%s/%s/summary.txt' % (outDir, coreSet, queryID, m)):
+                if not line.split('\t')[0] == 'genomeID':
+                    mergedStat.write('%s\t%s\n' % (m, line.strip()))
+    mergedStat.close()
+
 def main():
     version = '0.0.1'
     parser = argparse.ArgumentParser(description='You are running assessCompleteness version ' + str(version) + '.')
@@ -203,32 +233,14 @@ def main():
     required.add_argument('-d', '--coreDir', help='Path to core set directory, where folder core_orthologs can be found', action='store', default='', required=True)
     required.add_argument('-c', '--coreSet', help='Name of core set, which is subfolder within coreDir/core_orthologs/ directory', action='store', default='', required=True)
     required.add_argument('-o', '--outDir', help='Path to output directory', action='store', default='')
-    required.add_argument('-i', '--queryID', help='ID of taxon of interest (e.g. HUMAN@9606@3)', action='store', default='', type=str)
+    required.add_argument('--queryID', help='ID of taxon of interest (e.g. HUMAN@9606@3)', action='store', default='', type=str)
     optional.add_argument('-m', '--mode', help='Score cutoff mode. (1) all-vs-all FAS scores, (2) mean FAS of refspec seed, (3) confidence interval of all group FAS scores, (4) mean and stdev of sequence length',
                             action='store', default=1, choices=[1,2,3,4], type=int)
     optional.add_argument('--force', help='Force overwrite existing data', action='store_true', default=False)
-
     args = parser.parse_args()
 
-    coreDir = os.path.abspath(args.coreDir)
-    coreSet = args.coreSet
-    checkFileExist(coreDir + '/core_orthologs/' + coreSet, '')
-    mode = args.mode
-    queryID = args.queryID
-    outDir = os.path.abspath(args.outDir)
-    ppDir = '%s/%s/%s/phyloprofileOutput' % (outDir, coreSet, queryID)
-    checkFileExist(os.path.abspath(ppDir), 'No phylogenetic profile folder found!')
-    mode = args.mode
-    force = args.force
-
     start = time.time()
-
-    (noCutoff, stat) = doAssessment(ppDir, coreDir, coreSet, queryID, outDir, mode)
-    if len(noCutoff) > 0:
-        print('\033[92mWARNING: No cutoff for %s group(s):\033[0m\n%s\n' % (len(noCutoff), ','.join(noCutoff)))
-    if stat:
-        print(stat)
-
+    assessCompteness(args)
     ende = time.time()
     print('Finished in ' + '{:5.3f}s'.format(ende-start))
 
