@@ -1,8 +1,55 @@
 # fCATpy
+[![PyPI version](https://badge.fury.io/py/fcatpy.svg)](https://pypi.org/project/fcatpy/)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![Build Status](https://travis-ci.com/BIONF/fCATpy.svg?branch=master)](https://travis-ci.com/BIONF/fCATpy)
+
 Python package for fCAT, a feature-aware completeness assessment tool
 
-python ~/bionf/fCATpy/fcatpy/calcCutoff.py -d test2 -c eukaryota -a eukaryota_busco/weight_dir -b eukaryota_busco/blast_dir --cpus 6 --force
+# Table of Contents
+* [How to install](#how-to-install)
+* [Usage](#usage)
+* [Bugs](#bugs)
+* [Contributors](#contributors)
+* [Contact](#contact)
 
-python ~/bionf/fCATpy/fcatpy/searchOrtho.py -d test2 -c eukaryota -a eukaryota_busco/weight_dir -b eukaryota_busco/blast_dir -r "HOMSA@9606@2" -q query/HUMAN@9606@3/HUMAN@9606@3.fa -i 9606 --annoQuery ~/oneseq_data/weight_dir/HUMAN@9606@3.json --cpus 6
+# How to install
 
-python ~/bionf/fCATpy/fcatpy/assessCompleteness.py -d test2 -c eukaryota -o fcatOutput -i HOMSA@9606@1 -m 4
+*fCAT* tool is distributed as a python package called *fcatpy*. It is compatible with [Python ≥ v3.7](https://www.python.org/downloads/).
+
+You can install *fdog* using `pip`:
+```
+python3 -m pip install fcatpy
+```
+
+or, in case you do not have admin rights, and don't use package systems like Anaconda to manage environments you need to use the `--user` option:
+```
+python3 -m pip install --user fcatpy
+```
+
+and then add the following line to the end of your **~/.bashrc** or **~/.bash_profile** file, restart the current terminal to apply the change (or type `source ~/.bashrc`):
+
+```
+export PATH=$HOME/.local/bin:$PATH
+```
+
+# Usage
+
+```
+# calculate group-specific cutoffs for a core set
+fcat.cutoff --coreDir /path/to/core/sets --coreSet eukaryota --annoDir /path/to/core/weight_dir --blastDir /path/to/core/blast_dir --cpus 4
+
+# search for orthologs in a gene set of interst and create phylogenetic profiles
+fcat.ortho --coreDir /path/to/core/sets --coreSet eukaryota --annoDir /path/to/core/weight_dir --blastDir /path/to/core/blast_dir --refspecList "HOMSA@9606@2" --querySpecies /path/to/query.fa --annoQuery /path/to/query.json --cpus 4
+
+# create report for completeness assessment
+fcat.report --coreDir /path/to/core/sets --coreSet eukaryota --outDir /path/to/fcat/output --queryID queryID --mode 1
+```
+
+# Bugs
+Any bug reports or comments, suggestions are highly appreciated. Please [open an issue on GitHub](https://github.com/BIONF/fCATpy/issues/new) or be in touch via email.
+
+# Contributors
+- [Vinh Tran](https://github.com/trvinh)
+
+# Contact
+For further support or bug reports please contact: tran@bio.uni-frankfurt.de
