@@ -39,7 +39,7 @@ export PATH=$HOME/.local/bin:$PATH
 fcat.cutoff --coreDir /path/to/core/sets --coreSet eukaryota --annoDir /path/to/core/weight_dir --blastDir /path/to/core/blast_dir --cpus 4
 
 # search for orthologs in a gene set of interst and create phylogenetic profiles
-fcat.ortho --coreDir /path/to/core/sets --coreSet eukaryota --annoDir /path/to/core/weight_dir --blastDir /path/to/core/blast_dir --refspecList "HOMSA@9606@2" --querySpecies /path/to/query.fa --annoQuery /path/to/query.json --cpus 4
+fcat.ortho --coreDir /path/to/core/sets --coreSet eukaryota --annoDir /path/to/core/weight_dir --blastDir /path/to/core/blast_dir --refspecList "HOMSA@9606@2" --querySpecies /path/to/query.fa --annoQuery /path/to/query.json --cpus 4 --cleanup
 
 # create report for completeness assessment
 fcat.report --coreDir /path/to/core/sets --coreSet eukaryota --outDir /path/to/fcat/output --queryID queryID --mode 1

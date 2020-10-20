@@ -110,7 +110,8 @@ def mode3(ppFile, coreDir, coreSet, queryID):
                         LCL = float(l.split('\t')[1].strip())
                     if l.split('\t')[0] == 'UCL':
                         UCL = float(l.split('\t')[1].strip())
-                if LCL <= meanFas <= UCL:
+                # if LCL <= meanFas <= UCL:
+                if LCL <= meanFas:
                     assessment = addToDict(assessment, groupID, line.split('\t')[2], 'similar')
                 else:
                     assessment = addToDict(assessment, groupID, line.split('\t')[2], 'dissimilar')
