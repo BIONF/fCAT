@@ -16,7 +16,7 @@ Python package for fCAT, a feature-aware completeness assessment tool
 
 *fCAT* tool is distributed as a python package called *fcatpy*. It is compatible with [Python ≥ v3.7](https://www.python.org/downloads/).
 
-You can install *fdog* using `pip`:
+You can install *fcatpy* using `pip`:
 ```
 python3 -m pip install fcatpy
 ```
