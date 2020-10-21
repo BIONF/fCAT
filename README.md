@@ -55,7 +55,7 @@ fcat.report --coreDir /path/to/core/sets --coreSet eukaryota --outDir /path/to/f
 
 The complete process can be done using one function `fcat`
 ```
-fcat.ortho --coreDir /path/to/core/sets --coreSet eukaryota --annoDir /path/to/core/weight_dir --blastDir /path/to/core/blast_dir --refspecList "HOMSA@9606@2" --querySpecies /path/to/query.fa --annoQuery /path/to/query.json --cpus 4 --cleanup
+fcat --coreDir /path/to/core/sets --coreSet eukaryota --annoDir /path/to/core/weight_dir --blastDir /path/to/core/blast_dir --refspecList "HOMSA@9606@2" --querySpecies /path/to/query.fa --annoQuery /path/to/query.json --cpus 4 --cleanup
 ```
 
 *NOTE: currently there is an [issue with rpy2 library](https://github.com/rpy2/rpy2/issues/739), in which step 1 cannot be run using `fcat.cutoff` function. You must instead run the script directly using the python command e.g. `python3 /path/to/fcatpy/calcCutoff.py -h`. The function `fcat` is currently cannot be used for the same reason!*

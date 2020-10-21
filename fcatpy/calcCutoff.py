@@ -29,6 +29,9 @@ import statistics
 from scipy import stats
 from rpy2.robjects import FloatVector
 from rpy2.robjects.packages import importr
+# import scikits.bootstrap as boot
+import numpy as np
+import scipy.stats
 
 def checkFileExist(file):
     if not os.path.exists(os.path.abspath(file)):
@@ -170,7 +173,7 @@ def calcCutoff(args):
     # parse fas output into cutoffs
     fasOutDir = '%s/core_orthologs/%s/%s/fas_dir/fasscore_dir' % (coreDir, coreSet, groupID)
     fasScores = parseFasOut(fasOutDir, groupRefSpec[groupID])
-    # print(fasScores)
+    print(groupID)
     for key in fasScores:
         if key == 'all':
             groupPair = getGroupPairs(fasScores[key])
@@ -181,9 +184,37 @@ def calcCutoff(args):
             rateUCL = list(limits.rx2[2])
             UCL = 1/rateLCL[0]
             LCL = 1/rateUCL[0]
+            groupOut.write('median\t%s\n' % statistics.median(groupPair))
             groupOut.write('mean\t%s\n' % statistics.mean(groupPair))
             groupOut.write('LCL\t%s\n' % LCL)
             groupOut.write('UCL\t%s\n' % UCL)
+            print(groupPair)
+            print('len %s' % len(groupPair))
+            print('median %s' % statistics.median(groupPair))
+            print('mean %s' % statistics.mean(groupPair))
+            print('stdev %s' % statistics.stdev(groupPair))
+            print('LCL %s' % LCL)
+            print('UCL %s' % UCL)
+            # data = np.array(groupPair)
+            # bootstrap_result = boot.ci(test_data, scipy.stats.expon.fit)
+            # print(bootstrap_result)
+            # ML_lambda = 1 / np.mean(data)
+            # ML_BC_lambda = ML_lambda - ML_lambda / (len(data) - 1)
+            # CI_distance = ML_BC_lambda * 1.96/(len(data)**0.5)
+            # print("\nLambda with confidence intervals: {0:8f} +/- {1:8f}".format(ML_BC_lambda, CI_distance))
+            # print("Confidence intervals: ({0:8f}, {1:9f})".format(ML_BC_lambda - CI_distance, ML_BC_lambda + CI_distance))
+            # fit = scipy.stats.expon.fit(data)
+            # scipy_stats_lambda = 1 / fit[1]
+            # scipy_stats_CI_distance = scipy_stats_lambda * 1.96/(len(data)**0.5)
+            # print("\nOr, based on scipy.stats fit:")
+            # print("Lambda with confidence intervals: {0:8f} +/- {1:8f}".format(scipy_stats_lambda, scipy_stats_CI_distance))
+            # print("Confidence intervals: ({0:8f}, {1:9f})".format(scipy_stats_lambda - scipy_stats_CI_distance,
+            #                                                                 scipy_stats_lambda + scipy_stats_CI_distance))
+
+            # st.genextreme.fit(data)
+            # boot.ci(data, st.genextreme.fit)
+
+
         else:
             singleOut.write('%s\t%s\t%s\n' % (key, statistics.mean(fasScores[key]['score']), fasScores[key]['gene']))
     # get mean and stddev length for each group

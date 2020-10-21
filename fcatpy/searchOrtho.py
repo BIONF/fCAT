@@ -143,7 +143,7 @@ def prepareJob(coreDir, coreSet, queryID, refspecList, outDir, blastDir, annoDir
 
 def runFdog(args):
     (seqFile, seqName, refSpec, outPath, blastPath, hmmPath, searchPath, force) = args
-    fdog = 'fdog.run --seqFile %s --seqName %s --refspec %s --outpath %s --blastpath %s --hmmpath %s --searchpath %s --fasoff --reuseCore --cpu 1 > /dev/null 2>&1' % (seqFile, seqName, refSpec, outPath, blastPath, hmmPath, searchPath)
+    fdog = 'fdog.run --seqFile %s --seqName %s --refspec %s --outpath %s --blastpath %s --hmmpath %s --searchpath %s --fasoff --reuseCore --checkCoorthologsRef --cpu 1 > /dev/null 2>&1' % (seqFile, seqName, refSpec, outPath, blastPath, hmmPath, searchPath)
     if force:
         fdog = fdog + ' --force'
     try:

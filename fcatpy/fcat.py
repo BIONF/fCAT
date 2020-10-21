@@ -21,7 +21,7 @@ import os
 import argparse
 import time
 import multiprocessing as mp
-import fcatpy.calcCutoff as fcatC
+# import fcatpy.calcCutoff as fcatC
 import fcatpy.searchOrtho as fcatO
 import fcatpy.assessCompleteness as fcatR
 
@@ -32,7 +32,7 @@ def checkFileExist(file):
 def fcat(args):
     # calculate group specific cutoffs
     print('##### Calculating group specific cutoffs...')
-    fcatC.calcGroupCutoff(args)
+    # fcatC.calcGroupCutoff(args)
     # search for orthologs and create phylognetic profile files
     print('##### Searching for orthologs...')
     fcatO.searchOrtho(args)

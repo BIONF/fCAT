@@ -42,7 +42,9 @@ def addToDict(dict, groupID, seqID, type):
     if not groupID in dict:
         dict[groupID] = '%s\t%s\t%s' % (groupID, type, seqID)
     else:
-        dict[groupID] = '%s\n%s\t%s\t%s' % (dict[groupID], groupID, type, seqID)
+        tmp = dict[groupID].split('\t')
+        dict[groupID] = '%s\tduplicated (%s)\t%s' % (tmp[0], tmp[1], tmp[2])
+        dict[groupID] = '%s\n%s\tduplicated (%s)\t%s' % (dict[groupID], groupID, type, seqID)
     return(dict)
 
 def mode1(ppFile, coreDir, coreSet, queryID):
@@ -80,11 +82,11 @@ def mode2(ppFile, coreDir, coreSet, queryID, outDir):
         groupID = line.split('\t')[0]
         if queryID in line.split('\t')[2]:
             meanFas = statistics.mean((float(line.split('\t')[3]), float(line.split('\t')[4].strip())))
-            scoreFile = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir/1.cutoff' % (coreDir, coreSet, groupID)
+            scoreFile = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir/2.cutoff' % (coreDir, coreSet, groupID)
             if os.path.exists(scoreFile):
                 meanRefspec = 0
                 for l in readFile(scoreFile):
-                    if l.split('\t')[0] == groupRefspec[groupID]:
+                    if l.split('\t')[0] == groupRefspec[groupID].strip():
                         meanRefspec = float(l.split('\t')[1].strip())
                 if meanFas >= meanRefspec:
                     assessment = addToDict(assessment, groupID, line.split('\t')[2], 'similar')
