@@ -79,6 +79,8 @@ def parseQueryFa(query, taxid, outDir, doAnno, annoDir, cpus):
             addTaxon = 'fdog.addTaxon -f %s -i %s -o %s --replace --force' % (query, taxid, outDir)
             if doAnno == False:
                 addTaxon = addTaxon + ' --noAnno'
+            else:
+                print 'Annotation for %s not given!' % queryID
             try:
                 addTaxonOut = subprocess.run([addTaxon], shell=True, capture_output=True, check=True)
             except:
@@ -351,6 +353,8 @@ def searchOrtho(args):
     coreSet = args.coreSet
     checkFileExist(coreDir + '/core_orthologs/' + coreSet, '')
     refspecList = str(args.refspecList).split(",")
+    if len(refSpecList) == 0:
+        sys.exit('No refefence species given! Please specify reference taxa using --refspecList option!')
     query = args.querySpecies
     checkFileExist(os.path.abspath(query), '')
     query = os.path.abspath(query)

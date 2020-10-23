@@ -20,6 +20,8 @@ import os
 import argparse
 from pathlib import Path
 from Bio import SeqIO
+from Bio import AlignIO
+from Bio.Align import AlignInfo
 import subprocess
 import multiprocessing as mp
 import shutil
@@ -37,9 +39,28 @@ def checkFileExist(file):
     if not os.path.exists(os.path.abspath(file)):
         sys.exit('%s not found' % file)
 
+def annoFAS(groupFa, annoDir, cpus, force):
+    ### CAN BE IMPROVED!!!
+    ### by modify seq IDs in groupFa, then use extract option of annoFAS
+    ### and replace mod IDs by original IDs again in the annotaion json file
+    annoFAS = 'annoFAS -i %s -o %s --cpus %s > /dev/null 2>&1' % (groupFa, annoDir, cpus)
+    if force:
+        annoFAS = annoFAS + ' --force'
+    try:
+        subprocess.run([annoFAS], shell=True, check=True)
+    except:
+        print('\033[91mProblem occurred while running annoFAS\033[0m\n%s' % annoFAS)
+
+def getConsensus(alignmentFile, cov):
+    alignment = AlignIO.read(alignmentFile, 'fasta')
+    summary_align = AlignInfo.SummaryInfo(alignment)
+    consensus = summary_align.dumb_consensus(cov) # cov = 0.5 means that only characters that are present in at least 50% sequences will be considered
+    return(consensus)
+
 def prepareJob(coreDir, coreSet, annoDir, blastDir, bidirectional, force, cpus):
     groups = os.listdir(coreDir + '/core_orthologs/' + coreSet)
     fasJobs = []
+    fasJobsCons = []
     groupRefSpec = {}
     if len(groups) > 0:
         for groupID in groups:
@@ -72,21 +93,23 @@ def prepareJob(coreDir, coreSet, annoDir, blastDir, bidirectional, force, cpus):
                     checkFileExist(refGenome)
                     fasJobs.append([s.id, ref, groupID, groupFa, annoDirTmp, outDir, refGenome, bidirectional, force])
                     groupRefSpec[groupID].append(ref)
+
+                ###### consensus approach
+                # get consensus sequence
+                groupAln = '%s/%s.aln' % (group, groupID)
+                consensus = getConsensus(groupAln, 0.5)
+                consensusFa = '%s/cons.fa' % annoDirTmp
+                with open(consensusFa, 'w') as cf:
+                    cf.write('>consensus\n%s\n' % consensus)
+                # do annotation for consensus sequence
+                if not os.path.exists('%s/consensus.json' % (annoDirTmp)) or force:
+                    annoFAS(consensusFa, annoDirTmp, cpus, force)
+                # add to fasJobsCons
+                fasJobsCons.append([groupFa, consensusFa, annoDirTmp, outDir, force])
+
     else:
         sys.exit('No core group found at %s' % (coreDir + '/core_orthologs/' + coreSet))
     return(fasJobs, groupRefSpec)
-
-def annoFAS(groupFa, annoDir, cpus, force):
-    ### CAN BE IMPROVED!!!
-    ### by modify seq IDs in groupFa, then use extract option of annoFAS
-    ### and replace mod IDs by original IDs again in the annotaion json file
-    annoFAS = 'annoFAS -i %s -o %s --cpus %s > /dev/null 2>&1' % (groupFa, annoDir, cpus)
-    if force:
-        annoFAS = annoFAS + ' --force'
-    try:
-        subprocess.run([annoFAS], shell=True, check=True)
-    except:
-        print('\033[91mProblem occurred while running annoFAS\033[0m\n%s' % annoFAS)
 
 def calcFAS(args):
     (queryID, refSpec, groupID, groupFa, annoDir, outputDir, ref, bidirectional, force) = args
@@ -159,6 +182,19 @@ def getGroupPairs(scoreDict):
                 out.append(statistics.mean((scoreDict[s][q][0], scoreDict[q][s][0])))
                 donePair.append(s+'_'+q)
     return(out)
+
+def parseConsFas(args):
+    (groupFa, consensusFa, annoDirTmp, outDir, force) = args
+    # calculate fas scores for each sequence vs consensus
+    fasCmd = 'calcFAS -s \"%s\" -q \"%s\" -a %s -o %s -t 10 --raw --tsv --domain' % (groupFa, consensusFa, annoDir, outputDir)
+    try:
+        fasOut = subprocess.run([fasCmd], shell=True, capture_output=True, check=True)
+    except:
+        print('\033[91mProblem occurred while running calcFAS\033[0m\n%s' % fasCmd)
+    # parse fas scores
+    # blablabla
+    # save each score into 3.scores
+    # and mean to 1.scores
 
 def calcCutoff(args):
     (coreDir, coreSet, groupRefSpec, groupID) = args
