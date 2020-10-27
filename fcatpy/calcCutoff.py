@@ -31,13 +31,13 @@ import statistics
 from scipy import stats
 from rpy2.robjects import FloatVector
 from rpy2.robjects.packages import importr
-# import scikits.bootstrap as boot
-import numpy as np
-import scipy.stats
 
 def checkFileExist(file):
     if not os.path.exists(os.path.abspath(file)):
         sys.exit('%s not found' % file)
+
+def roundTo4(number):
+    return("%.4f" % round(number, 4))
 
 def annoFAS(groupFa, annoDir, cpus, force):
     ### CAN BE IMPROVED!!!
@@ -93,7 +93,6 @@ def prepareJob(coreDir, coreSet, annoDir, blastDir, bidirectional, force, cpus):
                     checkFileExist(refGenome)
                     fasJobs.append([s.id, ref, groupID, groupFa, annoDirTmp, outDir, refGenome, bidirectional, force])
                     groupRefSpec[groupID].append(ref)
-
                 ###### consensus approach
                 # get consensus sequence
                 groupAln = '%s/%s.aln' % (group, groupID)
@@ -105,11 +104,10 @@ def prepareJob(coreDir, coreSet, annoDir, blastDir, bidirectional, force, cpus):
                 if not os.path.exists('%s/consensus.json' % (annoDirTmp)) or force:
                     annoFAS(consensusFa, annoDirTmp, cpus, force)
                 # add to fasJobsCons
-                fasJobsCons.append([groupFa, consensusFa, annoDirTmp, outDir, force])
-
+                fasJobsCons.append([coreDir, coreSet, groupID, groupFa, consensusFa, annoDirTmp, outDir, force])
     else:
         sys.exit('No core group found at %s' % (coreDir + '/core_orthologs/' + coreSet))
-    return(fasJobs, groupRefSpec)
+    return(fasJobs, fasJobsCons, groupRefSpec)
 
 def calcFAS(args):
     (queryID, refSpec, groupID, groupFa, annoDir, outputDir, ref, bidirectional, force) = args
@@ -184,17 +182,30 @@ def getGroupPairs(scoreDict):
     return(out)
 
 def parseConsFas(args):
-    (groupFa, consensusFa, annoDirTmp, outDir, force) = args
-    # calculate fas scores for each sequence vs consensus
-    fasCmd = 'calcFAS -s \"%s\" -q \"%s\" -a %s -o %s -t 10 --raw --tsv --domain' % (groupFa, consensusFa, annoDir, outputDir)
+    (coreDir, coreSet, groupID, groupFa, consensusFa, annoDirTmp, outDir, force) = args
+    # calculate fas scores for each sequence (seed) vs consensus (query)
+    fasCmd = 'calcFAS -s \"%s\" -q \"%s\" -a %s -o %s -t 10 --raw --tsv --domain' % (groupFa, consensusFa, annoDirTmp, outDir)
     try:
         fasOut = subprocess.run([fasCmd], shell=True, capture_output=True, check=True)
     except:
         print('\033[91mProblem occurred while running calcFAS\033[0m\n%s' % fasCmd)
-    # parse fas scores
-    # blablabla
+    cutoffDir = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir' % (coreDir, coreSet, groupID)
+    singleOut = open(cutoffDir + '/4.cutoff', 'w')
+    singleOut.write('taxa\tcutoff\tgene\n')
+    groupOut = open(cutoffDir + '/3.cutoff', 'w')
+    groupOut.write('label\tvalue\n')
+    allFas = []
     # save each score into 3.scores
+    for line in fasOut.stdout.decode().split('\n'):
+        if '#\t' in line:
+            tmp = line.split('\t')
+            singleOut.write('%s\t%s\t%s\n' % (tmp[1].split('|')[1], roundTo4(float(tmp[3])), tmp[1]))
+            allFas.append(float(tmp[3]))
     # and mean to 1.scores
+    groupOut.write('meanCons\t%s\n' % roundTo4(statistics.mean(allFas)))
+    groupOut.write('medianCons\t%s\n' % roundTo4(statistics.median(allFas)))
+    singleOut.close()
+    groupOut.close()
 
 def calcCutoff(args):
     (coreDir, coreSet, groupRefSpec, groupID) = args
@@ -209,7 +220,7 @@ def calcCutoff(args):
     # parse fas output into cutoffs
     fasOutDir = '%s/core_orthologs/%s/%s/fas_dir/fasscore_dir' % (coreDir, coreSet, groupID)
     fasScores = parseFasOut(fasOutDir, groupRefSpec[groupID])
-    print(groupID)
+    # print(groupID)
     for key in fasScores:
         if key == 'all':
             groupPair = getGroupPairs(fasScores[key])
@@ -224,33 +235,6 @@ def calcCutoff(args):
             groupOut.write('mean\t%s\n' % statistics.mean(groupPair))
             groupOut.write('LCL\t%s\n' % LCL)
             groupOut.write('UCL\t%s\n' % UCL)
-            print(groupPair)
-            print('len %s' % len(groupPair))
-            print('median %s' % statistics.median(groupPair))
-            print('mean %s' % statistics.mean(groupPair))
-            print('stdev %s' % statistics.stdev(groupPair))
-            print('LCL %s' % LCL)
-            print('UCL %s' % UCL)
-            # data = np.array(groupPair)
-            # bootstrap_result = boot.ci(test_data, scipy.stats.expon.fit)
-            # print(bootstrap_result)
-            # ML_lambda = 1 / np.mean(data)
-            # ML_BC_lambda = ML_lambda - ML_lambda / (len(data) - 1)
-            # CI_distance = ML_BC_lambda * 1.96/(len(data)**0.5)
-            # print("\nLambda with confidence intervals: {0:8f} +/- {1:8f}".format(ML_BC_lambda, CI_distance))
-            # print("Confidence intervals: ({0:8f}, {1:9f})".format(ML_BC_lambda - CI_distance, ML_BC_lambda + CI_distance))
-            # fit = scipy.stats.expon.fit(data)
-            # scipy_stats_lambda = 1 / fit[1]
-            # scipy_stats_CI_distance = scipy_stats_lambda * 1.96/(len(data)**0.5)
-            # print("\nOr, based on scipy.stats fit:")
-            # print("Lambda with confidence intervals: {0:8f} +/- {1:8f}".format(scipy_stats_lambda, scipy_stats_CI_distance))
-            # print("Confidence intervals: ({0:8f}, {1:9f})".format(scipy_stats_lambda - scipy_stats_CI_distance,
-            #                                                                 scipy_stats_lambda + scipy_stats_CI_distance))
-
-            # st.genextreme.fit(data)
-            # boot.ci(data, st.genextreme.fit)
-
-
         else:
             singleOut.write('%s\t%s\t%s\n' % (key, statistics.mean(fasScores[key]['score']), fasScores[key]['gene']))
     # get mean and stddev length for each group
@@ -285,13 +269,16 @@ def calcGroupCutoff(args):
     force = args.force
 
     print('Preparing...')
-    (fasJobs, groupRefSpec) = prepareJob(coreDir, coreSet, annoDir, blastDir, bidirectional, force, cpus)
+    (fasJobs, fasJobsCons, groupRefSpec) = prepareJob(coreDir, coreSet, annoDir, blastDir, bidirectional, force, cpus)
 
     print('Calculating fas scores...')
     pool = mp.Pool(cpus)
     fasOut = []
     for _ in tqdm(pool.imap_unordered(calcFAS, fasJobs), total=len(fasJobs)):
         fasOut.append(_)
+    fasOutCons = []
+    for _ in tqdm(pool.imap_unordered(parseConsFas, fasJobsCons), total=len(fasJobsCons)):
+        fasOutCons.append(_)
 
     print('Calculating cutoffs...')
     cutoffJobs = []

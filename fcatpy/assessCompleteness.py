@@ -149,6 +149,58 @@ def mode4(ppFile, coreDir, coreSet, queryID):
                 noCutoff.append(groupID)
     return(assessment, noCutoff)
 
+def mode5(ppFile, coreDir, coreSet, queryID):
+    noCutoff = []
+    assessment = {}
+    for line in readFile(ppFile):
+        groupID = line.split('\t')[0]
+        # if queryID in line.split('\t')[2]:
+        if line.split('\t')[1] == 'ncbi'+str(queryID.split('@')[1]):
+            # meanFas = statistics.mean((float(line.split('\t')[3]), float(line.split('\t')[4].strip())))
+            meanFas = float(line.split('\t')[3].strip())
+            scoreFile = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir/3.cutoff' % (coreDir, coreSet, groupID)
+            if os.path.exists(scoreFile):
+                meanGroup = 0
+                for l in readFile(scoreFile):
+                    if l.split('\t')[0] == 'meanCons':
+                        meanGroup = float(l.split('\t')[1].strip())
+                if meanFas >= meanGroup:
+                    assessment = addToDict(assessment, groupID, line.split('\t')[2], 'similar')
+                else:
+                    assessment = addToDict(assessment, groupID, line.split('\t')[2], 'dissimilar')
+            else:
+                noCutoff.append(groupID)
+    return(assessment, noCutoff)
+
+def mode6(ppFile, coreDir, coreSet, queryID, outDir):
+    noCutoff = []
+    assessment = {}
+    # get refspec for each group
+    groupRefspec = {}
+    refspecFile = '%s/%s/%s/last_refspec.txt' % (outDir, coreSet, queryID)
+    for g in readFile(refspecFile):
+        groupRefspec[g.split('\t')[0]] = g.split('\t')[1]
+    # do assessment
+    for line in readFile(ppFile):
+        groupID = line.split('\t')[0]
+        # if queryID in line.split('\t')[2]:
+        if line.split('\t')[1] == 'ncbi'+str(queryID.split('@')[1]):
+            # meanFas = statistics.mean((float(line.split('\t')[3]), float(line.split('\t')[4].strip())))
+            meanFas = float(line.split('\t')[3].strip())
+            scoreFile = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir/4.cutoff' % (coreDir, coreSet, groupID)
+            if os.path.exists(scoreFile):
+                meanRefspec = 0
+                for l in readFile(scoreFile):
+                    if l.split('\t')[0] == groupRefspec[groupID].strip():
+                        meanRefspec = float(l.split('\t')[1].strip())
+                if meanFas >= meanRefspec:
+                    assessment = addToDict(assessment, groupID, line.split('\t')[2], 'similar')
+                else:
+                    assessment = addToDict(assessment, groupID, line.split('\t')[2], 'dissimilar')
+            else:
+                noCutoff.append(groupID)
+    return(assessment, noCutoff)
+
 def doAssessment(ppDir, coreDir, coreSet, queryID, outDir, mode):
     assessment = {}
     noCutoff = []
@@ -165,6 +217,12 @@ def doAssessment(ppDir, coreDir, coreSet, queryID, outDir, mode):
     elif mode == 4:
         ppFile = '%s/length.phyloprofile' % (ppDir)
         (assessment, noCutoff) = mode4(ppFile, coreDir, coreSet, queryID)
+    elif mode == 5:
+        ppFile = '%s/mode4.phyloprofile' % (ppDir)
+        (assessment, noCutoff) = mode5(ppFile, coreDir, coreSet, queryID)
+    elif mode == 6:
+        ppFile = '%s/mode4.phyloprofile' % (ppDir)
+        (assessment, noCutoff) = mode6(ppFile, coreDir, coreSet, queryID, outDir)
     # print full report
     stat = writeReport(assessment, outDir, coreDir, coreSet, queryID, mode)
     return(noCutoff, stat)
@@ -236,8 +294,9 @@ def main():
     required.add_argument('-c', '--coreSet', help='Name of core set, which is subfolder within coreDir/core_orthologs/ directory', action='store', default='', required=True)
     required.add_argument('-o', '--outDir', help='Path to output directory', action='store', default='')
     required.add_argument('--queryID', help='ID of taxon of interest (e.g. HUMAN@9606@3)', action='store', default='', type=str)
-    optional.add_argument('-m', '--mode', help='Score cutoff mode. (1) all-vs-all FAS scores, (2) mean FAS of refspec seed, (3) confidence interval of all group FAS scores, (4) mean and stdev of sequence length',
-                            action='store', default=1, choices=[1,2,3,4], type=int)
+    optional.add_argument('-m', '--mode',
+                        help='Score cutoff mode. (1) all-vs-all FAS scores, (2) mean FAS of refspec seed, (3) confidence interval of all group FAS scores, (4) mean and stdev of sequence length, (5) mean consensus, (6) reference consensus',
+                        action='store', default=1, choices=[1,2,3,4,5,6], type=int)
     optional.add_argument('--force', help='Force overwrite existing data', action='store_true', default=False)
     args = parser.parse_args()
 
