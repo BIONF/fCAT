@@ -121,7 +121,6 @@ def calcFAS(args):
     if flag == 1:
         # calculate fas scores for each sequence vs all
         fasCmd = 'calcFAS -s \"%s\" -q \"%s\" --query_id \"%s\" -a %s -o %s -n %s --domain -r %s -t 10' % (groupFa, groupFa, queryID, annoDir, outputDir, refSpec, ref)
-        # print(fasCmd)
         if bidirectional:
             fasCmd = fasCmd + ' --bidirectional'
         fasCmd = fasCmd + ' > /dev/null 2>&1'
@@ -137,6 +136,9 @@ def parseFasOut(fasOutDir, refSpecList):
         fasOut = fasOutDir + '/' + refSpec + '.tsv'
         if not os.path.exists(fasOut):
             sys.exit('%s not found! Probably calcFAS could not run correctly. Please check again!' % fasOut)
+        else:
+            if os.stat(fasOut).st_size == 0:
+                sys.exit('%s is empty! Probably calcFAS could not run correctly. Please check again!' % fasOut)
         if not refSpec in fasScores:
             fasScores[refSpec] = {}
             fasScores[refSpec]['score'] = []
@@ -190,6 +192,7 @@ def parseConsFas(args):
     except:
         print('\033[91mProblem occurred while running calcFAS\033[0m\n%s' % fasCmd)
     cutoffDir = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir' % (coreDir, coreSet, groupID)
+    Path(cutoffDir).mkdir(parents=True, exist_ok=True)
     singleOut = open(cutoffDir + '/4.cutoff', 'w')
     singleOut.write('taxa\tcutoff\tgene\n')
     groupOut = open(cutoffDir + '/3.cutoff', 'w')

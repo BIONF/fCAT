@@ -429,6 +429,8 @@ def calcFAScons(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
                     fas = roundTo4(float(line.split('\t')[2].split('/')[0]))
                     finalPhyloprofile.write('%s\t%s\t%s\t%s\n' % (groupID, ncbiID, orthoID, fas))
     finalPhyloprofile.close()
+    # return tmp folders
+    return(annoDirTmp, fasDirOutTmp)
 
 
 def checkResult(fcatOut, force):
@@ -525,7 +527,12 @@ def searchOrtho(args):
         print('Calculating FAS scores between query orthologs and all sequences in each core group...')
         calcFASall(coreDir, outDir, coreSet, queryID, annoDir, cpus, force, groupRefspec)
         print('Calculating FAS scores between query orthologs and consensus sequence in each core group...')
-        calcFAScons(coreDir, outDir, coreSet, queryID, annoDir, cpus, force)
+        (annoDirTmp, fasDirOutTmp) = calcFAScons(coreDir, outDir, coreSet, queryID, annoDir, cpus, force)
+        # remove tmp folder
+        if os.path.exists(annoDirTmp):
+            shutil.rmtree(annoDirTmp)
+        if os.path.exists(fasDirOutTmp):
+            shutil.rmtree(fasDirOutTmp)
         # write missing groups
         if len(missing) > 0:
             missingFile = open('%s/fcatOutput/%s/%s/missing.txt' % (outDir, coreSet, queryID), 'w')
