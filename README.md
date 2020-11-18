@@ -1,7 +1,7 @@
-# fCATpy
-[![PyPI version](https://badge.fury.io/py/fcatpy.svg)](https://pypi.org/project/fcatpy/)
+# fCAT
+[![PyPI version](https://badge.fury.io/py/fcat.svg)](https://pypi.org/project/fcat/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Build Status](https://travis-ci.com/BIONF/fCATpy.svg?branch=master)](https://travis-ci.com/BIONF/fCATpy)
+[![Build Status](https://travis-ci.com/BIONF/fCAT.svg?branch=master)](https://travis-ci.com/BIONF/fCAT)
 
 Python package for fCAT, a feature-aware completeness assessment tool
 
@@ -15,18 +15,18 @@ Python package for fCAT, a feature-aware completeness assessment tool
 
 # How to install
 
-*fCAT* tool is distributed as a python package called *fcatpy*. It is compatible with [Python ≥ v3.7](https://www.python.org/downloads/).
+*fCAT* tool is distributed as a python package called *fcat*. It is compatible with [Python ≥ v3.7](https://www.python.org/downloads/).
 
-You can install *fcatpy* using `pip`:
+You can install *fcat* using `pip`:
 ```
-# python3 -m pip install fcatpy
-python3 -m pip install git+https://github.com/BIONF/fCATpy
+# python3 -m pip install fcat
+python3 -m pip install git+https://github.com/BIONF/fCAT
 ```
 
 or, in case you do not have admin rights, and don't use package systems like Anaconda to manage environments you need to use the `--user` option:
 ```
-# python3 -m pip install --user fcatpy
-python3 -m pip install --user git+https://github.com/BIONF/fCATpy
+# python3 -m pip install --user fcat
+python3 -m pip install --user git+https://github.com/BIONF/fCAT
 ```
 
 and then add the following line to the end of your **~/.bashrc** or **~/.bash_profile** file, restart the current terminal to apply the change (or type `source ~/.bashrc`):
@@ -76,7 +76,7 @@ fcat.report --coreDir /path/to/fcat_data --coreSet eukaryota --outDir /path/to/f
 ```
 
 # Bugs
-Any bug reports or comments, suggestions are highly appreciated. Please [open an issue on GitHub](https://github.com/BIONF/fCATpy/issues/new) or be in touch via email.
+Any bug reports or comments, suggestions are highly appreciated. Please [open an issue on GitHub](https://github.com/BIONF/fCAT/issues/new) or be in touch via email.
 
 # Contributors
 - [Vinh Tran](https://github.com/trvinh)

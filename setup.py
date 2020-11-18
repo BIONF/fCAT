@@ -15,7 +15,7 @@
 #  GNU General Public License for more details.
 #
 #  You should have received a copy of the GNU General Public License
-#  along with fcatpy.  If not, see <http://www.gnu.org/licenses/>.
+#  along with fcat.  If not, see <http://www.gnu.org/licenses/>.
 #
 #######################################################################
 
@@ -25,7 +25,7 @@ with open("README.md", "r") as input:
     long_description = input.read()
 
 setup(
-    name="fcatpy",
+    name="fcat",
     version="0.0.1",
     python_requires='>=3.7.0',
     description="Python package for fCAT, a feature-aware completeness assessment tool",
@@ -33,7 +33,7 @@ setup(
     long_description_content_type="text/markdown",
     author="Vinh Tran",
     author_email="tran@bio.uni-frankfurt.de",
-    url="https://github.com/BIONF/fCATpy",
+    url="https://github.com/BIONF/fCAT",
     packages=find_packages(),
     package_data={'': ['*']},
     install_requires=[
@@ -46,10 +46,10 @@ setup(
         'rpy2'
     ],
     entry_points={
-        'console_scripts': ["fcat = fcatpy.fcat:main",
-                            "fcat.cutoff = fcatpy.calcCutoff:main",
-                            "fcat.ortho = fcatpy.searchOrtho:main",
-                            "fcat.report = fcatpy.assessCompleteness:main"],
+        'console_scripts': ["fcat = fcat.fcat:main",
+                            "fcat.cutoff = fcat.calcCutoff:main",
+                            "fcat.ortho = fcat.searchOrtho:main",
+                            "fcat.report = fcat.assessCompleteness:main"],
     },
     license="GPL-3.0",
     classifiers=[
