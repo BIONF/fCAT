@@ -1,13 +1,11 @@
-matrix:
-  include:
-      - language: R
-        r: bioc-release
-      - language: python
-        python: '3.8'
+language: python
+python:
+  - '3.8'
 install:
-- pip install .
+  - sudo apt-get install -y r-base
+  - pip install .
 script:
-- python3 fcat/fcat.py -h
+  - python3 fcat/fcat.py -h
 deploy:
   provider: pypi
   username: __token__
