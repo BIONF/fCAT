@@ -3,7 +3,7 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Build Status](https://travis-ci.com/BIONF/fCAT.svg?branch=master)](https://travis-ci.com/BIONF/fCAT)
 
-Python package for fCAT, a feature-aware completeness assessment tool
+Python package for fCAT, a **f**eature-aware **C**ompleteness **A**ssessment **T**ool
 
 # Table of Contents
 * [How to install](#how-to-install)
