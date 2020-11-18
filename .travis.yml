@@ -1,0 +1,14 @@
+language: python
+python:
+- '3.8'
+install:
+- pip install .
+script:
+- python3 fcat/fcat.py -h
+deploy:
+  provider: pypi
+  username: __token__
+  password:
+    secure: GS6/1fiV972oV7f6k51gieeYpTegwS+ZAL/U/A8SjYeYDkRixa1+HTHQm7SdtBZILElw2idizK0o6IoZRCjAypXcNrfBueIjjxoJh0lR38NgXUyfeMn3EVUR2J+niHIOy+8hT+M89nY38ZAwVRiRujD1ISSBOcebQ9bYrTXOBXs88XsbioezBopvfvHVmLOA8HIXzCb+mrI16FEsxIdV915CnzotsQ/6rfXCIqzqoZD2c5aGPcV/Hd1H2J4hvsVPAb8A/U3fpXB8qHyw0imzhwrc/oYXs10H+azeuY4PLVq8W1EjDOOY40fUWqfjjCWcN6+/f7N5C+gBeUL2LZqBt28rZSGAxgcStj4c88c4liNshNYOSB79Z+3Prxood1RttddaygMzao/TTlQQDCQTnrtddeTyhxQOTIomWGNRAHZqeHRRhsIDDjqzRGbbNkMpyGYgXJxT8HMPoiDbs89DUX4kcAiT/FA3czeuIFU2Y8RpRYDXj0uIEQDzyzaUSmM5MU65WbkiFareQQD1qELlSaJSGlmUnRLAPRF/rCpVocnsjOQ/aBdVPGhVgalh3I4otDuwox+Dz9o7kR8hzIHEvnqDAjf7D5lEomJtBt2NbKHJVxzYkbgCsslxH1iJm0Ta7coRkiHco+DxR/+X5UXfYH3DnwkKBT1FMlPrLgaY3tY=
+  on:
+    tags: true
