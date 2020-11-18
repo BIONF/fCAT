@@ -45,10 +45,10 @@ where **eukaryota** is name of the fCAT core set (equivalent to BUSCO set); **HO
 # Output
 You will find the output in the */path/to/fcat/output/fcatOutput/eukaryota/query/* folder, where */path/to/fcat/output/* could be your current directory if you not specified `--outDir` when running `fcat`. The following important output files/folders can be found:
 
-    - all_summary.txt: summary of the completeness assessment using all 4 score modes
-    - fdogOutput.tar.gz: a zipped file of the ortholog search result
-    - mode_1, mode_2, mode_3 and mode_4: detailed output for each score mode
-    - phyloprofileOutput: output phylogenetic profile data that can be used with [PhyloProfile tool](https://github.com/BIONF/PhyloProfile)
+- *all_summary.txt*: summary of the completeness assessment using all 4 score modes
+- *fdogOutput.tar.gz*: a zipped file of the ortholog search result
+- *mode_1*, *mode_2*, *mode_3* and *mode_4*: detailed output for each score mode
+- *phyloprofileOutput*: folder contains output phylogenetic profile data that can be used with [PhyloProfile tool](https://github.com/BIONF/PhyloProfile)
 
 # Bugs
 Any bug reports or comments, suggestions are highly appreciated. Please [open an issue on GitHub](https://github.com/BIONF/fCAT/issues/new) or be in touch via email.
