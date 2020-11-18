@@ -1,6 +1,9 @@
-language: python
-python:
-- '3.8'
+matrix:
+  include:
+      - language: R
+        r: bioc-release
+      - language: python
+        python: '3.8'
 install:
 - pip install .
 script:
