@@ -6,8 +6,8 @@ install:
   - pip install .
 script:
   - python3 fcat/searchOrtho.py -h
-  - fcat -h
-deploy:
+  - fcat.report -h
+sdeploy:
   provider: pypi
   username: __token__
   password:
