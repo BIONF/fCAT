@@ -43,7 +43,8 @@ setup(
         'six',
         'greedyFAS>=1.4.0',
         'fdog>=0.0.8',
-        'rpy2'
+        'rpy2',
+        'tzlocal'
     ],
     entry_points={
         'console_scripts': ["fcat = fcat.fcat:main",

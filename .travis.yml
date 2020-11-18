@@ -5,7 +5,8 @@ install:
   - sudo apt-get install -y r-base
   - pip install .
 script:
-  - python3 fcat/fcat.py -h
+  - python3 fcat/searchOrtho.py -h
+  # - python3 fcat/fcat.py -h
 deploy:
   provider: pypi
   username: __token__
