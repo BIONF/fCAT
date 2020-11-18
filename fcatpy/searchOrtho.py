@@ -429,9 +429,6 @@ def calcFAScons(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
                     fas = roundTo4(float(line.split('\t')[2].split('/')[0]))
                     finalPhyloprofile.write('%s\t%s\t%s\t%s\n' % (groupID, ncbiID, orthoID, fas))
     finalPhyloprofile.close()
-    # return tmp folders
-    return(annoDirTmp, fasDirOutTmp)
-
 
 def checkResult(fcatOut, force):
     if force:
@@ -481,7 +478,7 @@ def searchOrtho(args):
     if cpus >= mp.cpu_count():
         cpus = mp.cpu_count()-1
     force = args.force
-    cleanup = args.cleanup
+    keep = args.keep
 
     # check annotation of query species and get query ID
     doAnno = checkQueryAnno(annoQuery, annoDir)
@@ -527,12 +524,10 @@ def searchOrtho(args):
         print('Calculating FAS scores between query orthologs and all sequences in each core group...')
         calcFASall(coreDir, outDir, coreSet, queryID, annoDir, cpus, force, groupRefspec)
         print('Calculating FAS scores between query orthologs and consensus sequence in each core group...')
-        (annoDirTmp, fasDirOutTmp) = calcFAScons(coreDir, outDir, coreSet, queryID, annoDir, cpus, force)
+        calcFAScons(coreDir, outDir, coreSet, queryID, annoDir, cpus, force)
         # remove tmp folder
-        if os.path.exists(annoDirTmp):
-            shutil.rmtree(annoDirTmp)
-        if os.path.exists(fasDirOutTmp):
-            shutil.rmtree(fasDirOutTmp)
+        if os.path.exists('%s/tmp' % fcatOut):
+            shutil.rmtree('%s/tmp' % fcatOut)
         # write missing groups
         if len(missing) > 0:
             missingFile = open('%s/fcatOutput/%s/%s/missing.txt' % (outDir, coreSet, queryID), 'w')
@@ -546,10 +541,10 @@ def searchOrtho(args):
         except:
             print('Cannot archiving fdog output!')
 
-    if cleanup:
+    if keep == False:
         print('Cleaning up...')
-        if os.path.exists('%s/genome_dir' % (outDir)):
-            shutil.rmtree('%s/genome_dir' % (outDir))
+        if os.path.exists('%s/genome_dir/' % (outDir)):
+            shutil.rmtree('%s/genome_dir/' % (outDir))
         if os.path.exists('%s/fdogOutput/' % (fcatOut)):
             shutil.rmtree('%s/fdogOutput/' % (fcatOut))
     print('Done! Check output in %s' % fcatOut)
@@ -570,7 +565,7 @@ def main():
     optional.add_argument('-i', '--taxid', help='Taxonomy ID of gene set for species of interest', action='store', default=0, type=int)
     optional.add_argument('--cpus', help='Number of CPUs used for annotation. Default = 4', action='store', default=4, type=int)
     optional.add_argument('--force', help='Force overwrite existing data', action='store_true', default=False)
-    optional.add_argument('--cleanup', help='Delete temporary phyloprofile data', action='store_true', default=False)
+    optional.add_argument('--keep', help='Keep temporary phyloprofile data', action='store_true', default=False)
     args = parser.parse_args()
 
     start = time.time()

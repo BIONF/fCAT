@@ -8,6 +8,7 @@ Python package for fCAT, a feature-aware completeness assessment tool
 # Table of Contents
 * [How to install](#how-to-install)
 * [Usage](#usage)
+* [Output](#output)
 * [Bugs](#bugs)
 * [Contributors](#contributors)
 * [Contact](#contact)
@@ -36,35 +37,50 @@ export PATH=$HOME/.local/bin:$PATH
 
 # Usage
 
+The complete process of *fCAT* can be done using one function `fcat`
+```
+fcat --coreDir /path/to/fcat_data --coreSet eukaryota --refspecList "HOMSA@9606@2" --querySpecies /path/to/query.fa [--annoQuery /path/to/query.json] [--outDir /path/to/fcat/output]
+```
+
+where **eukaryota** is name of the fCAT core set (equivalent to BUSCO set); **HOMSA@9606@2** is the reference species from that core set that will be used for the ortholog search; **query** is the name of species of interest. If `--annoQuery` not specified, *fCAT* fill do the feature annotation for the query proteins using [FAS tool](https://github.com/BIONF/FAS).
+
+# Output
+
+You will find the output in the */path/to/fcat/output/fcatOutput/eukaryota/query/* folder, where */path/to/fcat/output/* could be your current directory if you not specified `--outDir` when running `fcat`. The following important output files/folders can be found:
+
+    - all_summary.txt: summary of the completeness assessment using all 4 score modes
+    - fdogOutput.tar.gz: a zipped file of the ortholog search result
+    - mode_1, mode_2, mode_3 and mode_4: detailed output for each score mode
+    - phyloprofileOutput: output phylogenetic profile data that can be used with [PhyloProfile tool](https://github.com/BIONF/PhyloProfile)
+
+# For internal use
+
 *fCAT* algorithm consists of 3 main steps:
 
 1) Calculate group-specific cutoffs for a core set
+
+Please make sure that the R dependencies are available before running this function.
+
 ```
-fcat.cutoff --coreDir /path/to/core/sets --coreSet eukaryota --annoDir /path/to/core/weight_dir --blastDir /path/to/core/blast_dir --cpus 4
+fcat.cutoff --coreDir /path/to/fcat_data --coreSet eukaryota
 ```
 
 2) Search for orthologs in a gene set of interst and create phylogenetic profiles
 ```
-fcat.ortho --coreDir /path/to/core/sets --coreSet eukaryota --annoDir /path/to/core/weight_dir --blastDir /path/to/core/blast_dir --refspecList "HOMSA@9606@2" --querySpecies /path/to/query.fa --annoQuery /path/to/query.json --cpus 4 --cleanup
+fcat.ortho --coreDir /path/to/fcat_data --coreSet eukaryota --refspecList "HOMSA@9606@2" --querySpecies /path/to/query.fa --annoQuery /path/to/query.json
 ```
 
 3) Create report for completeness assessment
 ```
-fcat.report --coreDir /path/to/core/sets --coreSet eukaryota --outDir /path/to/fcat/output --queryID queryID --mode 1
+fcat.report --coreDir /path/to/fcat_data --coreSet eukaryota --outDir /path/to/fcat/output --queryID queryID --mode 1
 ```
-
-The complete process can be done using one function `fcat`
-```
-fcat --coreDir /path/to/core/sets --coreSet eukaryota --annoDir /path/to/core/weight_dir --blastDir /path/to/core/blast_dir --refspecList "HOMSA@9606@2" --querySpecies /path/to/query.fa --annoQuery /path/to/query.json --cpus 4 --cleanup
-```
-
-*NOTE: currently there is an [issue with rpy2 library](https://github.com/rpy2/rpy2/issues/739), in which step 1 cannot be run using `fcat.cutoff` function. You must instead run the script directly using the python command e.g. `python3 /path/to/fcatpy/calcCutoff.py -h`. The function `fcat` is currently cannot be used for the same reason!*
 
 # Bugs
 Any bug reports or comments, suggestions are highly appreciated. Please [open an issue on GitHub](https://github.com/BIONF/fCATpy/issues/new) or be in touch via email.
 
 # Contributors
 - [Vinh Tran](https://github.com/trvinh)
+- [Giang Nguyen](https://github.com/giangnguyen0709)
 
 # Contact
 For further support or bug reports please contact: tran@bio.uni-frankfurt.de

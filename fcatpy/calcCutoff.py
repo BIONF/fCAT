@@ -27,6 +27,7 @@ import multiprocessing as mp
 import shutil
 from tqdm import tqdm
 import time
+from datetime import datetime
 import statistics
 from scipy import stats
 from rpy2.robjects import FloatVector
@@ -62,51 +63,59 @@ def prepareJob(coreDir, coreSet, annoDir, blastDir, bidirectional, force, cpus):
     fasJobs = []
     fasJobsCons = []
     groupRefSpec = {}
-    if len(groups) > 0:
-        for groupID in groups:
-            groupRefSpec[groupID] = []
-            group = '%s/core_orthologs/%s/%s' % (coreDir, coreSet, groupID)
-            if os.path.isdir(group):
-                print(groupID)
-                groupFa = '%s/%s.fa' % (group, groupID)
-                annoDirTmp = '%s/fas_dir/annotation_dir/' % (group)
-                Path(annoDirTmp).mkdir(parents=True, exist_ok=True)
-                outDir = '%s/fas_dir/fasscore_dir/' % (group)
-                Path(outDir).mkdir(parents=True, exist_ok=True)
-                # do annotation for this group
-                if not os.path.exists('%s/%s.json' % (annoDirTmp, groupID)) or force:
-                    annoFAS(groupFa, annoDirTmp, cpus, force)
-                # get annotation for ref genomes and path to ref genomes
-                for s in SeqIO.parse(groupFa, 'fasta'):
-                    ref = s.id.split('|')[1]
-                    if not os.path.exists('%s/%s.json' % (annoDirTmp, ref)):
-                        if os.path.exists('%s/%s.json' % (annoDir, ref)):
-                            src = '%s/%s.json' % (annoDir, ref)
-                            dst = '%s/%s.json' % (annoDirTmp, ref)
-                            os.symlink(src, dst)
-                    refGenome = '%s/%s/%s.fa' % (blastDir, ref, ref)
-                    if not os.path.exists(refGenome):
-                        if os.path.islink(refGenome):
-                            refGenome = os.path.realpath(refGenome)
-                        else:
-                            sys.exit('%s not found!' % refGenome)
-                    checkFileExist(refGenome)
-                    fasJobs.append([s.id, ref, groupID, groupFa, annoDirTmp, outDir, refGenome, bidirectional, force])
-                    groupRefSpec[groupID].append(ref)
-                ###### consensus approach
-                # get consensus sequence
-                groupAln = '%s/%s.aln' % (group, groupID)
-                consensus = getConsensus(groupAln, 0.5)
-                consensusFa = '%s/cons.fa' % annoDirTmp
-                with open(consensusFa, 'w') as cf:
-                    cf.write('>consensus\n%s\n' % consensus)
-                # do annotation for consensus sequence
-                if not os.path.exists('%s/consensus.json' % (annoDirTmp)) or force:
-                    annoFAS(consensusFa, annoDirTmp, cpus, force)
-                # add to fasJobsCons
-                fasJobsCons.append([coreDir, coreSet, groupID, groupFa, consensusFa, annoDirTmp, outDir, force])
-    else:
-        sys.exit('No core group found at %s' % (coreDir + '/core_orthologs/' + coreSet))
+    if not os.path.exists('%s/core_orthologs/%s/done.txt' % (coreDir, coreSet)):
+        if len(groups) > 0:
+            for groupID in groups:
+                groupRefSpec[groupID] = []
+                group = '%s/core_orthologs/%s/%s' % (coreDir, coreSet, groupID)
+                if os.path.isdir(group):
+                    print(groupID)
+                    groupFa = '%s/%s.fa' % (group, groupID)
+                    annoDirTmp = '%s/fas_dir/annotation_dir/' % (group)
+                    Path(annoDirTmp).mkdir(parents=True, exist_ok=True)
+                    outDir = '%s/fas_dir/fasscore_dir/' % (group)
+                    Path(outDir).mkdir(parents=True, exist_ok=True)
+                    # check existing cutoff files
+                    flag = 0
+                    if os.path.exists('%s/fas_dir/cutoff_dir/1.cutoff' % (group)):
+                        if not os.stat('%s/fas_dir/cutoff_dir/1.cutoff' % (group)).st_size == 0:
+                            flag = 1
+                    if flag == 0:
+                        # do annotation for this group
+                        if not os.path.exists('%s/%s.json' % (annoDirTmp, groupID)) or force:
+                            annoFAS(groupFa, annoDirTmp, cpus, force)
+                        # get annotation for ref genomes and path to ref genomes
+                        for s in SeqIO.parse(groupFa, 'fasta'):
+                            ref = s.id.split('|')[1]
+                            if not os.path.exists('%s/%s.json' % (annoDirTmp, ref)):
+                                if os.path.exists('%s/%s.json' % (annoDir, ref)):
+                                    src = '%s/%s.json' % (annoDir, ref)
+                                    dst = '%s/%s.json' % (annoDirTmp, ref)
+                                    if not os.path.exists(dst):
+                                        os.symlink(src, dst)
+                            refGenome = '%s/%s/%s.fa' % (blastDir, ref, ref)
+                            if not os.path.exists(refGenome):
+                                if os.path.islink(refGenome):
+                                    refGenome = os.path.realpath(refGenome)
+                                else:
+                                    sys.exit('%s not found!' % refGenome)
+                            checkFileExist(refGenome)
+                            fasJobs.append([s.id, ref, groupID, groupFa, annoDirTmp, outDir, refGenome, bidirectional, force])
+                            groupRefSpec[groupID].append(ref)
+                        ###### consensus approach
+                        # get consensus sequence
+                        groupAln = '%s/%s.aln' % (group, groupID)
+                        consensus = getConsensus(groupAln, 0.5)
+                        consensusFa = '%s/cons.fa' % annoDirTmp
+                        with open(consensusFa, 'w') as cf:
+                            cf.write('>consensus\n%s\n' % consensus)
+                        # do annotation for consensus sequence
+                        if not os.path.exists('%s/consensus.json' % (annoDirTmp)) or force:
+                            annoFAS(consensusFa, annoDirTmp, cpus, force)
+                        # add to fasJobsCons
+                        fasJobsCons.append([coreDir, coreSet, groupID, groupFa, consensusFa, annoDirTmp, outDir, force])
+        else:
+            sys.exit('No core group found at %s' % (coreDir + '/core_orthologs/' + coreSet))
     return(fasJobs, fasJobsCons, groupRefSpec)
 
 def calcFAS(args):
@@ -269,27 +278,33 @@ def calcGroupCutoff(args):
     if cpus >= mp.cpu_count():
         cpus = mp.cpu_count()-1
     bidirectional = args.bidirectional
-    force = args.force
+    force = args.forceCutoff
 
     print('Preparing...')
     (fasJobs, fasJobsCons, groupRefSpec) = prepareJob(coreDir, coreSet, annoDir, blastDir, bidirectional, force, cpus)
 
     print('Calculating fas scores...')
     pool = mp.Pool(cpus)
-    fasOut = []
-    for _ in tqdm(pool.imap_unordered(calcFAS, fasJobs), total=len(fasJobs)):
-        fasOut.append(_)
-    fasOutCons = []
-    for _ in tqdm(pool.imap_unordered(parseConsFas, fasJobsCons), total=len(fasJobsCons)):
-        fasOutCons.append(_)
+    if len(fasJobs) > 0:
+        fasOut = []
+        for _ in tqdm(pool.imap_unordered(calcFAS, fasJobs), total=len(fasJobs)):
+            fasOut.append(_)
+    if len(fasJobsCons) > 0:
+        fasOutCons = []
+        for _ in tqdm(pool.imap_unordered(parseConsFas, fasJobsCons), total=len(fasJobsCons)):
+            fasOutCons.append(_)
 
-    print('Calculating cutoffs...')
-    cutoffJobs = []
-    for groupID in groupRefSpec:
-        cutoffJobs.append([coreDir, coreSet, groupRefSpec, groupID])
-    cutoffOut = []
-    for _ in tqdm(pool.imap_unordered(calcCutoff, cutoffJobs), total=len(cutoffJobs)):
-        cutoffOut.append(_)
+    if len(groupRefSpec) > 0:
+        print('Calculating cutoffs...')
+        cutoffJobs = []
+        for groupID in groupRefSpec:
+            cutoffJobs.append([coreDir, coreSet, groupRefSpec, groupID])
+        cutoffOut = []
+        if len(cutoffJobs) > 0:
+            for _ in tqdm(pool.imap_unordered(calcCutoff, cutoffJobs), total=len(cutoffJobs)):
+                cutoffOut.append(_)
+            with open('%s/core_orthologs/%s/done.txt' % (coreDir, coreSet), 'w') as f:
+                f.write(str(datetime.now()))
 
 def main():
     version = '0.0.1'
@@ -302,15 +317,13 @@ def main():
     optional.add_argument('-b', '--blastDir', help='Path to BLAST directory of all core species', action='store', default='')
     optional.add_argument('--cpus', help='Number of CPUs used for annotation. Default = 4', action='store', default=4, type=int)
     optional.add_argument('--bidirectional', help=argparse.SUPPRESS, action='store_true', default=False)
-    optional.add_argument('--force', help='Force overwrite existing data', action='store_true', default=False)
+    optional.add_argument('--forceCutoff', help='Force overwrite existing data', action='store_true', default=False)
     args = parser.parse_args()
 
     start = time.time()
     calcGroupCutoff(args)
     ende = time.time()
     print('Finished in ' + '{:5.3f}s'.format(ende-start))
-
-
 
 if __name__ == '__main__':
     main()

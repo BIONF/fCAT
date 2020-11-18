@@ -33,10 +33,13 @@ def checkFileExist(file, msg):
         sys.exit('%s not found! %s' % (file, msg))
 
 def readFile(file):
-    with open(file, 'r') as f:
-        lines = f.readlines()
-        f.close()
-        return(lines)
+    if os.path.exists(file):
+        with open(file, 'r') as f:
+            lines = f.readlines()
+            f.close()
+            return(lines)
+    else:
+        return('NA')
 
 def addToDict(dict, groupID, seqID, type):
     if not groupID in dict:
@@ -269,11 +272,21 @@ def assessCompteness(args):
     mode = args.mode
     force = args.force
     # do assessment and print report
-    (noCutoff, stat) = doAssessment(ppDir, coreDir, coreSet, queryID, outDir, mode)
-    if len(noCutoff) > 0:
-        print('\033[92mWARNING: No cutoff for %s group(s):\033[0m\n%s\n' % (len(noCutoff), ','.join(noCutoff)))
-    if stat:
-        print(stat)
+    if mode == 0:
+        for m in range(1,5):
+            print('Mode %s:' % m)
+            (noCutoff, stat) = doAssessment(ppDir, coreDir, coreSet, queryID, outDir, m)
+            if len(noCutoff) > 0:
+                print('\033[92mWARNING: No cutoff for %s group(s):\033[0m\n%s\n' % (len(noCutoff), ','.join(noCutoff)))
+            if stat:
+                print(stat)
+    else:
+        (noCutoff, stat) = doAssessment(ppDir, coreDir, coreSet, queryID, outDir, mode)
+        if len(noCutoff) > 0:
+            print('\033[92mWARNING: No cutoff for %s group(s):\033[0m\n%s\n' % (len(noCutoff), ','.join(noCutoff)))
+        if stat:
+            print(stat)
+
     # merge all report (if available)
     modes = ('mode_1', 'mode_2', 'mode_3', 'mode_4')
     mergedStat = open('%s/%s/%s/all_summary.txt' % (outDir, coreSet, queryID), 'w')
@@ -295,8 +308,8 @@ def main():
     required.add_argument('-o', '--outDir', help='Path to output directory', action='store', default='')
     required.add_argument('--queryID', help='ID of taxon of interest (e.g. HUMAN@9606@3)', action='store', default='', type=str)
     optional.add_argument('-m', '--mode',
-                        help='Score cutoff mode. (1) all-vs-all FAS scores, (2) mean FAS of refspec seed, (3) confidence interval of all group FAS scores, (4) mean and stdev of sequence length, (5) mean consensus, (6) reference consensus',
-                        action='store', default=1, choices=[1,2,3,4,5,6], type=int)
+                        help='Score cutoff mode. (0) all modes, (1) mean of all-vs-all FAS scores, (2) mean FAS of refspec seed, (3) lower endpoint of CI of all-vs-all FAS scores, (4) mean and stdev of sequence length, (5) mean consensus, (6) reference consensus',
+                        action='store', default=0, choices=[0,1,2,3,4,5,6], type=int)
     optional.add_argument('--force', help='Force overwrite existing data', action='store_true', default=False)
     args = parser.parse_args()
 
