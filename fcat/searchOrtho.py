@@ -29,6 +29,7 @@ import datetime
 import statistics
 import glob
 import tarfile
+import re
 
 def checkFileExist(file, msg):
     if not os.path.exists(os.path.abspath(file)):
@@ -64,11 +65,12 @@ def checkQueryAnno(annoQuery, annoDir):
     if not annoQuery == '':
         annoQuery = os.path.abspath(annoQuery)
         checkFileExist(annoQuery, '')
-        try:
-            os.symlink(annoQuery, annoDir+'/query.json')
-        except FileExistsError:
-            os.remove(annoDir+'/query.json')
-            os.symlink(annoQuery, annoDir+'/query.json')
+        if not annoDir in annoQuery:
+            try:
+                os.symlink(annoQuery, annoDir+'/query.json')
+            except FileExistsError:
+                os.remove(annoDir+'/query.json')
+                os.symlink(annoQuery, annoDir+'/query.json')
         doAnno = False
     return(doAnno)
 
@@ -79,7 +81,7 @@ def parseQueryFa(query, taxid, outDir, doAnno, annoDir, cpus):
         if taxid == '0':
             sys.exit('Query taxon does not have suitable ID format (e.g. HUMAN@9606@3). Please provide its taxonomy ID additionaly using --taxid option!')
         else:
-            addTaxon = 'fdog.addTaxon -f %s -i %s -o %s --replace --force' % (query, taxid, outDir)
+            addTaxon = 'fdog.addTaxon -f %s -i %s -o %s --replace' % (query, taxid, outDir)
             if doAnno == False:
                 addTaxon = addTaxon + ' --noAnno'
             else:
@@ -88,8 +90,13 @@ def parseQueryFa(query, taxid, outDir, doAnno, annoDir, cpus):
                 addTaxonOut = subprocess.run([addTaxon], shell=True, capture_output=True, check=True)
             except:
                 sys.exit('Problem occurred while parsing query fasta file\n%s' % addTaxon)
-            lines = addTaxonOut.stdout.decode().split('\n')
-            queryID = lines[1].split('\t')[1]
+            queryID = ''
+            for line in addTaxonOut.stdout.decode().split('\n'):
+                if "Species name" in line:
+                    queryID = line.split('\t')[1]
+                    print('Query ID used by fCAT and fDOG: %s' % queryID)
+            if len(queryID) == 0:
+                sys.exit('Cannot identidy queryID!')
     else:
         Path('%s/genome_dir/%s' % (outDir, queryID)).mkdir(parents=True, exist_ok=True)
         shutil.copy(query, '%s/genome_dir/%s/%s.fa' % (outDir, queryID, queryID))
@@ -412,7 +419,7 @@ def calcFAScons(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
                 try:
                     subprocess.run([extractAnnoCmd], shell=True, check=True)
                 except:
-                    print('\033[91mProblem occurred while running extracting annotation for \'%s\'\033[0m\n%s' % (seedFa, extractAnnoCmd))
+                    print('\033[91mProblem occurred while running extracting annotation for \'%s\'\033[0m\n%s' % (groupFa, extractAnnoCmd))
     # do FAS calculation
     pool = mp.Pool(cpus)
     calcFASout = []
@@ -484,8 +491,8 @@ def searchOrtho(args):
     doAnno = checkQueryAnno(annoQuery, annoDir)
     queryID = parseQueryFa(query, taxid, outDir, doAnno, annoDir, cpus)
     if doAnno == False:
-        os.rename(annoDir+'/query.json', annoDir+'/'+queryID+'.json')
-
+        if os.path.exists(annoDir+'/query.json'):
+            os.rename(annoDir+'/query.json', annoDir+'/'+queryID+'.json')
     # check old output files
     fcatOut = '%s/fcatOutput/%s/%s' % (outDir, coreSet, queryID)
     status = checkResult(fcatOut, force)
@@ -523,8 +530,8 @@ def searchOrtho(args):
         missing = calcFAS(coreDir, outDir, coreSet, queryID, annoDir, cpus, force)
         print('Calculating FAS scores between query orthologs and all sequences in each core group...')
         calcFASall(coreDir, outDir, coreSet, queryID, annoDir, cpus, force, groupRefspec)
-        print('Calculating FAS scores between query orthologs and consensus sequence in each core group...')
-        calcFAScons(coreDir, outDir, coreSet, queryID, annoDir, cpus, force)
+        # print('Calculating FAS scores between query orthologs and consensus sequence in each core group...')
+        # calcFAScons(coreDir, outDir, coreSet, queryID, annoDir, cpus, force)
         # remove tmp folder
         if os.path.exists('%s/tmp' % fcatOut):
             shutil.rmtree('%s/tmp' % fcatOut)
@@ -550,8 +557,8 @@ def searchOrtho(args):
     print('Done! Check output in %s' % fcatOut)
 
 def main():
-    version = '0.0.1'
-    parser = argparse.ArgumentParser(description='You are running searchOrtho version ' + str(version) + '.')
+    version = '0.0.3'
+    parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
     required.add_argument('-d', '--coreDir', help='Path to core set directory, where folder core_orthologs can be found', action='store', default='', required=True)

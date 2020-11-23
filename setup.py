@@ -26,7 +26,7 @@ with open("README.md", "r") as input:
 
 setup(
     name="fcat",
-    version="0.0.2",
+    version="0.0.3",
     python_requires='>=3.7.0',
     description="Python package for fCAT, a feature-aware completeness assessment tool",
     long_description=long_description,
@@ -44,7 +44,8 @@ setup(
         'greedyFAS>=1.4.0',
         'fdog>=0.0.8',
         'rpy2',
-        'tzlocal'
+        'tzlocal',
+        'scipy'
     ],
     entry_points={
         'console_scripts': ["fcat = fcat.fcat:main",

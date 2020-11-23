@@ -299,8 +299,8 @@ def assessCompteness(args):
     mergedStat.close()
 
 def main():
-    version = '0.0.1'
-    parser = argparse.ArgumentParser(description='You are running assessCompleteness version ' + str(version) + '.')
+    version = '0.0.3'
+    parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
     required.add_argument('-d', '--coreDir', help='Path to core set directory, where folder core_orthologs can be found', action='store', default='', required=True)
