@@ -220,7 +220,19 @@ def calcFAS(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
                 for groupID in groups:
                     coreFasDir = '%s/core_orthologs/%s/%s/fas_dir/fasscore_dir' % (coreDir, coreSet, groupID)
                     for fasFile in glob.glob('%s/*.tsv' % coreFasDir):
-                        if not refSpec in fasFile:
+                        if queryID.split('@')[1] == refSpec.split('@')[1]:
+                            if not refSpec in fasFile:
+                                for fLine in readFile(fasFile):
+                                    if refSpec in fLine.split('\t')[0]:
+                                        tmp = fLine.split('\t')
+                                        revFAS = 0
+                                        revFile = '%s/%s.tsv' % (coreFasDir, tmp[0].split('|')[1])
+                                        for revLine in readFile(revFile):
+                                            if tmp[1] == revLine.split('\t')[0]:
+                                                revFAS = revLine.split('\t')[2].split('/')[0]
+                                        coreLine = '%s\t%s\t%s\t%s\t%s\n' % (groupID, 'ncbi' + str(tmp[1].split('|')[1].split('@')[1]), tmp[1], tmp[2].split('/')[0], revFAS)
+                                        finalPhyloprofile.write(coreLine)
+                        else:
                             for fLine in readFile(fasFile):
                                 if refSpec in fLine.split('\t')[0]:
                                     tmp = fLine.split('\t')
@@ -316,14 +328,23 @@ def calcFASall(coreDir, outDir, coreSet, queryID, annoDir, cpus, force, groupRef
             meanCoreFile = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir/2.cutoff' % (coreDir, coreSet, groupIDmod)
             for tax in readFile(meanCoreFile):
                 if not tax.split('\t')[0] == 'taxa':
-                    if not tax.split('\t')[0] == groupRefspec[groupIDmod]:
+                    if queryID.split('@')[1] == groupRefspec[groupIDmod].split('@')[1]:
+                        if not tax.split('\t')[0] == groupRefspec[groupIDmod]:
+                            ppCore = '%s\t%s\t%s|1\t%s\n' % (groupIDmod, 'ncbi' + str(tax.split('\t')[0].split('@')[1]), tax.split('\t')[2].strip(), tax.split('\t')[1])
+                            finalPhyloprofile.write(ppCore)
+                    else:
                         ppCore = '%s\t%s\t%s|1\t%s\n' % (groupIDmod, 'ncbi' + str(tax.split('\t')[0].split('@')[1]), tax.split('\t')[2].strip(), tax.split('\t')[1])
                         finalPhyloprofile.write(ppCore)
         finalPhyloprofile.close()
         # length phyloprofile file and final fasta file
         for s in SeqIO.parse(mergedFa, 'fasta'):
             idMod = '_'.join(s.id.split('_')[1:])
-            if not idMod.split('|')[1] == groupRefspec[idMod.split('|')[0]]:
+            if queryID.split('@')[1] == groupRefspec[groupIDmod].split('@')[1]:
+                if not idMod.split('|')[1] == groupRefspec[idMod.split('|')[0]]:
+                    finalFa.write('>%s\n%s\n' % (idMod, s.seq))
+                    ppLen = '%s\t%s\t%s\t%s\n' % (idMod.split('|')[0], 'ncbi' + str(idMod.split('|')[1].split('@')[1]), idMod, len(s.seq))
+                    finalLen.write(ppLen)
+            else:
                 finalFa.write('>%s\n%s\n' % (idMod, s.seq))
                 ppLen = '%s\t%s\t%s\t%s\n' % (idMod.split('|')[0], 'ncbi' + str(idMod.split('|')[1].split('@')[1]), idMod, len(s.seq))
                 finalLen.write(ppLen)
