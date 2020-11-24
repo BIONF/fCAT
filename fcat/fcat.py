@@ -25,6 +25,7 @@ import shutil
 import fcat.calcCutoff as fcatC
 import fcat.searchOrtho as fcatO
 import fcat.assessCompleteness as fcatR
+import fcat.mergePhyloprofile as fcatM
 
 def checkFileExist(file):
     if not os.path.exists(os.path.abspath(file)):
@@ -56,11 +57,13 @@ def fcat(args):
     doAnno = fcatO.checkQueryAnno(args.annoQuery, annoDir)
     args.queryID = fcatO.parseQueryFa(os.path.abspath(args.querySpecies), str(args.taxid), outDir, doAnno, annoDir, cpus)
     fcatR.assessCompteness(args)
+    # merge phyloprofile output
+    fcatM.mergePP(args)
     if os.path.exists('%s/genome_dir/' % (outDir)):
         shutil.rmtree('%s/genome_dir/' % (outDir))
 
 def main():
-    version = '0.0.3'
+    version = '0.0.4'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')

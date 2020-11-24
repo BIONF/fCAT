@@ -26,7 +26,7 @@ with open("README.md", "r") as input:
 
 setup(
     name="fcat",
-    version="0.0.3",
+    version="0.0.4",
     python_requires='>=3.7.0',
     description="Python package for fCAT, a feature-aware completeness assessment tool",
     long_description=long_description,
@@ -51,7 +51,8 @@ setup(
         'console_scripts': ["fcat = fcat.fcat:main",
                             "fcat.cutoff = fcat.calcCutoff:main",
                             "fcat.ortho = fcat.searchOrtho:main",
-                            "fcat.report = fcat.assessCompleteness:main"],
+                            "fcat.report = fcat.assessCompleteness:main",
+                            "fcat.mergeOutput = fcat.mergePhyloprofile:main"],
     },
     license="GPL-3.0",
     classifiers=[
