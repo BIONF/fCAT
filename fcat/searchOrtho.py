@@ -182,8 +182,10 @@ def calcFAS(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
     if mode == 1 or mode == 3:
         finalPhyloprofile = open('%s/mode23.phyloprofile' % (phyloprofileDir), 'w')
         finalPhyloprofile.write('geneID\tncbiID\torthoID\tFAS_F\tFAS_B\n')
+        finalDomain = open('%s/mode23.domains' % (phyloprofileDir), 'w')
     elif mode == 2:
         finalPhyloprofile = open('%s/mode23.phyloprofile' % (phyloprofileDir), 'a')
+        finalDomain = open('%s/mode23.domains' % (phyloprofileDir), 'a')
     # parse single fdog output
     missing = []
     fdogOutDir = '%s/fcatOutput/%s/%s/fdogOutput' % (outDir, coreSet, queryID)
@@ -243,8 +245,13 @@ def calcFAS(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
                                             revFAS = revLine.split('\t')[2].split('/')[0]
                                     coreLine = '%s\t%s\t%s\t%s\t%s\n' % (groupID, 'ncbi' + str(tmp[1].split('|')[1].split('@')[1]), tmp[1], tmp[2].split('/')[0], revFAS)
                                     finalPhyloprofile.write(coreLine)
+                # move domain file
+                if os.path.exists('%s/%s_forward.domains' % (refDir, refSpec)):
+                    for line in readFile('%s/%s_forward.domains' % (refDir, refSpec)):
+                        finalDomain.write(line)
     if not mode == 0:
         finalPhyloprofile.close()
+        finalDomain.close()
     return(missing)
 
 def calcFASall(coreDir, outDir, coreSet, queryID, annoDir, cpus, force, groupRefspec):
@@ -353,12 +360,13 @@ def calcFASall(coreDir, outDir, coreSet, queryID, annoDir, cpus, force, groupRef
         # join domain files
         shutil.copyfileobj(open('%s/%s_all_forward.domains' % (fdogOutDir, queryID), 'rb'), finalFwdDomain)
         finalFwdDomain.close()
-        finalDomain = open('%s/FAS.domains' % (phyloprofileDir), 'w')
+        finalDomain = open('%s/mode1.domains' % (phyloprofileDir), 'w')
         for domains in readFile('%s/FAS_forward.domains' % (phyloprofileDir)):
             tmp = domains.split('\t')
             mGroup = '_'.join(tmp[0].split('#')[0].split('_')[1:])
             mQuery = '_'.join(tmp[0].split('#')[1].split('_')[1:])
             mSeed = '_'.join(tmp[1].split('_')[1:])
+            # if queryID in mSeed:
             domainLine = '%s\t%s\t%s\t%s\t%s\t%s\tNA\tN\n' % (mGroup+'#'+mQuery, mSeed, tmp[2], tmp[3], tmp[4], tmp[5])
             finalDomain.write(domainLine)
         finalDomain.close()

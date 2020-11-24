@@ -56,9 +56,8 @@ def fcat(args):
     doAnno = fcatO.checkQueryAnno(args.annoQuery, annoDir)
     args.queryID = fcatO.parseQueryFa(os.path.abspath(args.querySpecies), str(args.taxid), outDir, doAnno, annoDir, cpus)
     fcatR.assessCompteness(args)
-    if args.keep == False:
-        if os.path.exists('%s/genome_dir/' % (outDir)):
-            shutil.rmtree('%s/genome_dir/' % (outDir))
+    if os.path.exists('%s/genome_dir/' % (outDir)):
+        shutil.rmtree('%s/genome_dir/' % (outDir))
 
 def main():
     version = '0.0.3'

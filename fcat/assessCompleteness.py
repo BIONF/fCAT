@@ -204,6 +204,35 @@ def mode6(ppFile, coreDir, coreSet, queryID, outDir):
                 noCutoff.append(groupID)
     return(assessment, noCutoff)
 
+def writeReport(assessment, outDir, coreDir, coreSet, queryID, mode):
+    missing = '%s/%s/%s/missing.txt' % (outDir, coreSet, queryID)
+    ignored = '%s/%s/%s/ignored.txt' % (outDir, coreSet, queryID)
+    Path('%s/%s/%s/mode_%s' % (outDir, coreSet, queryID, mode)).mkdir(parents=True, exist_ok=True)
+    # write full report
+    fullFile = open('%s/%s/%s/mode_%s/full.txt' % (outDir, coreSet, queryID, mode), 'w')
+    for group in assessment:
+        fullFile.write('%s\n' % assessment[group])
+    for m in readFile(missing):
+        fullFile.write(m.strip() + '\tmissing\n')
+    for i in readFile(ignored):
+        fullFile.write(i.strip() + '\tignored\n')
+    fullFile.close()
+    # write summary report
+    summaryFile = open('%s/%s/%s/mode_%s/summary.txt' % (outDir, coreSet, queryID, mode), 'w')
+    type = [x.split('\t')[1] for x in open('%s/%s/%s/mode_%s/full.txt' % (outDir, coreSet, queryID, mode)).readlines()]
+    print(len(type))
+    groupID = [x.split('\t')[0] for x in open('%s/%s/%s/mode_%s/full.txt' % (outDir, coreSet, queryID, mode)).readlines()]
+    dup = [item for item, count in collections.Counter(groupID).items() if count > 1]
+    coreGroups = os.listdir(coreDir + '/core_orthologs/' + coreSet)
+    header = 'genomeID\tsimilar\tdissimilar\tduplicated\tmissing\tignored\ttotal'
+    stat = '%s\n%s\t%s\t%s\t%s\t%s\t%s\t%s\n' % (header, queryID, type.count('similar'), type.count('dissimilar'), len(dup), len(readFile(missing)), len(readFile(ignored)), len(coreGroups)-1)
+    if mode == 4:
+        header = 'genomeID\tcomplete\tfragmented\tduplicated\tmissing\tignored\ttotal'
+        stat = '%s\n%s\t%s\t%s\t%s\t%s\t%s\t%s\n' % (header, queryID, type.count('complete'), type.count('fragmented'), len(dup), len(readFile(missing)), len(readFile(ignored)), len(coreGroups)-1)
+    summaryFile.write(stat)
+    summaryFile.close()
+    return(stat)
+
 def doAssessment(ppDir, coreDir, coreSet, queryID, outDir, mode):
     assessment = {}
     noCutoff = []
@@ -229,34 +258,6 @@ def doAssessment(ppDir, coreDir, coreSet, queryID, outDir, mode):
     # print full report
     stat = writeReport(assessment, outDir, coreDir, coreSet, queryID, mode)
     return(noCutoff, stat)
-
-def writeReport(assessment, outDir, coreDir, coreSet, queryID, mode):
-    missing = '%s/%s/%s/missing.txt' % (outDir, coreSet, queryID)
-    ignored = '%s/%s/%s/ignored.txt' % (outDir, coreSet, queryID)
-    Path('%s/%s/%s/mode_%s' % (outDir, coreSet, queryID, mode)).mkdir(parents=True, exist_ok=True)
-    # write full report
-    fullFile = open('%s/%s/%s/mode_%s/full.txt' % (outDir, coreSet, queryID, mode), 'w')
-    for group in assessment:
-        fullFile.write('%s\n' % assessment[group])
-    for m in readFile(missing):
-        fullFile.write(m.strip() + '\tmissing\n')
-    for i in readFile(ignored):
-        fullFile.write(i.strip() + '\tignored\n')
-    fullFile.close()
-    # write summary report
-    summaryFile = open('%s/%s/%s/mode_%s/summary.txt' % (outDir, coreSet, queryID, mode), 'w')
-    type = [x.split('\t')[1] for x in open('%s/%s/%s/mode_%s/full.txt' % (outDir, coreSet, queryID, mode)).readlines()]
-    groupID = [x.split('\t')[0] for x in open('%s/%s/%s/mode_%s/full.txt' % (outDir, coreSet, queryID, mode)).readlines()]
-    dup = [item for item, count in collections.Counter(groupID).items() if count > 1]
-    coreGroups = os.listdir(coreDir + '/core_orthologs/' + coreSet)
-    header = 'genomeID\tsimilar\tdissimilar\tduplicated\tmissing\tignored\ttotal'
-    stat = '%s\n%s\t%s\t%s\t%s\t%s\t%s\t%s\n' % (header, queryID, type.count('similar'), type.count('dissimilar'), len(dup), len(readFile(missing)), len(readFile(ignored)), len(coreGroups))
-    if mode == 4:
-        header = 'genomeID\tcomplete\tfragmented\tduplicated\tmissing\tignored\ttotal'
-        stat = '%s\n%s\t%s\t%s\t%s\t%s\t%s\t%s\n' % (header, queryID, type.count('complete'), type.count('fragmented'), len(dup), len(readFile(missing)), len(readFile(ignored)), len(coreGroups))
-    summaryFile.write(stat)
-    summaryFile.close()
-    return(stat)
 
 def assessCompteness(args):
     coreDir = os.path.abspath(args.coreDir)
@@ -291,12 +292,31 @@ def assessCompteness(args):
     modes = ('mode_1', 'mode_2', 'mode_3', 'mode_4')
     mergedStat = open('%s/%s/%s/all_summary.txt' % (outDir, coreSet, queryID), 'w')
     mergedStat.write('mode\tgenomeID\tsimilar\tdissimilar\tduplicated\tmissing\tignored\ttotal\n')
+    mergedFull = open('%s/%s/%s/all_full.txt' % (outDir, coreSet, queryID), 'w')
+    fullTypeDict = {}
+    fullOrthoDict = {}
+    availableMode = []
     for m in modes:
+        availableMode.append(m)
         if os.path.exists('%s/%s/%s/%s/summary.txt' % (outDir, coreSet, queryID, m)):
             for line in readFile('%s/%s/%s/%s/summary.txt' % (outDir, coreSet, queryID, m)):
                 if not line.split('\t')[0] == 'genomeID':
                     mergedStat.write('%s\t%s\n' % (m, line.strip()))
+        if os.path.exists('%s/%s/%s/%s/full.txt' % (outDir, coreSet, queryID, m)):
+            for line in readFile('%s/%s/%s/%s/full.txt' % (outDir, coreSet, queryID, m)):
+                tmp = line.split('\t') # 449680at2759	similar	449680at2759|TRINE@6336@1|T07_13573.1|1
+                if not tmp[0] in fullTypeDict:
+                    fullTypeDict[tmp[0]] = []
+                    orthoID = ''
+                    if len(tmp) == 3:
+                        orthoID = tmp[2].strip()
+                    fullOrthoDict[tmp[0]] = orthoID
+                fullTypeDict[tmp[0]].append(tmp[1].strip())
+    mergedFull.write('groupID\t%s\torthoID\n' % '\t'.join(availableMode))
+    for gid in fullTypeDict:
+        mergedFull.write('%s\t%s\t%s\n' % (gid, '\t'.join(fullTypeDict[gid]), fullOrthoDict[gid]))
     mergedStat.close()
+    mergedFull.close()
 
 def main():
     version = '0.0.3'
