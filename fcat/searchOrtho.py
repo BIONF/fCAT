@@ -60,19 +60,25 @@ def isInt(s):
     except ValueError:
         return False
 
-def checkQueryAnno(annoQuery, annoDir):
+def checkQueryAnno(annoQuery, annoDir, taxid, query):
     doAnno = True
+    queryID = query.split('/')[-1].split('.')[0]
+    queryIDtmp = queryID.split('@')
+    if not (len(queryIDtmp) == 3 and isInt(queryIDtmp[1])):
+        id = taxid
+    else:
+        id = queryIDtmp[1]
     if not annoQuery == '':
         annoQuery = os.path.abspath(annoQuery)
         checkFileExist(annoQuery, '')
         if not annoDir in annoQuery:
             try:
-                os.symlink(annoQuery, annoDir+'/query.json')
+                os.symlink(annoQuery, '%s/query_%s.json' % (annoDir, id))
             except FileExistsError:
-                os.remove(annoDir+'/query.json')
-                os.symlink(annoQuery, annoDir+'/query.json')
+                os.remove( '%s/query_%s.json' % (annoDir, id))
+                os.symlink(annoQuery,  '%s/query_%s.json' % (annoDir, id))
         doAnno = False
-    return(doAnno)
+    return(doAnno, id)
 
 def parseQueryFa(coreSet, query, taxid, outDir, doAnno, annoDir, cpus):
     queryID = query.split('/')[-1].split('.')[0]
@@ -527,11 +533,11 @@ def searchOrtho(args):
 
     currDir = os.getcwd()
     # check annotation of query species and get query ID
-    doAnno = checkQueryAnno(annoQuery, annoDir)
+    (doAnno, queryTaxId) = checkQueryAnno(annoQuery, annoDir, taxid, query)
     queryID = parseQueryFa(coreSet, query, taxid, outDir, doAnno, annoDir, cpus)
     if doAnno == False:
-        if os.path.exists(annoDir+'/query.json'):
-            os.rename(annoDir+'/query.json', annoDir+'/'+queryID+'.json')
+        if os.path.exists( '%s/query_%s.json' % (annoDir, queryTaxId)):
+            os.rename ('%s/query_%s.json' % (annoDir, queryTaxId), annoDir+'/'+queryID+'.json')
     # move genome_dir into fcatOutput/coreSet/query folder
     src = '%s/genome_dir/%s' % (outDir, queryID)
     dest = '%s/fcatOutput/%s/%s/genome_dir/%s' % (outDir, coreSet, queryID, queryID)
@@ -602,7 +608,7 @@ def searchOrtho(args):
     print('Done! Check output in %s' % fcatOut)
 
 def main():
-    version = '0.0.5'
+    version = '0.0.6'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
