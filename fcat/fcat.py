@@ -55,15 +55,13 @@ def fcat(args):
     if cpus >= mp.cpu_count():
         cpus = mp.cpu_count()-1
     doAnno = fcatO.checkQueryAnno(args.annoQuery, annoDir)
-    args.queryID = fcatO.parseQueryFa(os.path.abspath(args.querySpecies), str(args.taxid), outDir, doAnno, annoDir, cpus)
+    args.queryID = fcatO.parseQueryFa(args.coreSet, os.path.abspath(args.querySpecies), str(args.taxid), outDir, doAnno, annoDir, cpus)
     fcatR.assessCompteness(args)
     # merge phyloprofile output
     fcatM.mergePP(args)
-    if os.path.exists('%s/genome_dir/' % (outDir)):
-        shutil.rmtree('%s/genome_dir/' % (outDir))
 
 def main():
-    version = '0.0.4'
+    version = '0.0.5'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')

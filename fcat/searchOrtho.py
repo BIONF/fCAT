@@ -74,7 +74,7 @@ def checkQueryAnno(annoQuery, annoDir):
         doAnno = False
     return(doAnno)
 
-def parseQueryFa(query, taxid, outDir, doAnno, annoDir, cpus):
+def parseQueryFa(coreSet, query, taxid, outDir, doAnno, annoDir, cpus):
     queryID = query.split('/')[-1].split('.')[0]
     queryIDtmp = queryID.split('@')
     if not (len(queryIDtmp) == 3 and isInt(queryIDtmp[1])):
@@ -98,9 +98,10 @@ def parseQueryFa(query, taxid, outDir, doAnno, annoDir, cpus):
             if len(queryID) == 0:
                 sys.exit('Cannot identidy queryID!')
     else:
-        Path('%s/genome_dir/%s' % (outDir, queryID)).mkdir(parents=True, exist_ok=True)
-        shutil.copy(query, '%s/genome_dir/%s/%s.fa' % (outDir, queryID, queryID))
-        checkedFile = open('%s/genome_dir/%s/%s.fa.checked' % (outDir, queryID, queryID), 'w')
+        Path('%s/fcatOutput/%s/%s/genome_dir/%s' % (outDir, coreSet, queryID, queryID)).mkdir(parents=True, exist_ok=True)
+        shutil.copy(query, '%s/fcatOutput/%s/%s/genome_dir/%s/%s.fa' % (outDir, coreSet, queryID, queryID, queryID))
+        os.chmod('%s/fcatOutput/%s/%s/genome_dir/%s/%s.fa' % (outDir, coreSet, queryID, queryID, queryID), 0o755)
+        checkedFile = open('%s/fcatOutput/%s/%s/genome_dir/%s/%s.fa.checked' % (outDir, coreSet, queryID, queryID, queryID), 'w')
         now = datetime.datetime.now()
         checkedFile.write(now.strftime("%Y-%m-%d %H:%M:%S"))
         checkedFile.close()
@@ -135,7 +136,7 @@ def prepareJob(coreDir, coreSet, queryID, refspecList, outDir, blastDir, annoDir
     hmmPath = coreDir + '/core_orthologs/' + coreSet
     groups = os.listdir(hmmPath)
     if len(groups) > 0:
-        searchPath = '%s/genome_dir' % (outDir)
+        searchPath = '%s/fcatOutput/%s/%s/genome_dir' % (outDir, coreSet, queryID)
         # create single fdog job for each core group
         for groupID in groups:
             if os.path.isdir(hmmPath + '/' + groupID):
@@ -466,18 +467,26 @@ def calcFAScons(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
                     finalPhyloprofile.write('%s\t%s\t%s\t%s\n' % (groupID, ncbiID, orthoID, fas))
     finalPhyloprofile.close()
 
+def deleteFolder(folder):
+    if os.path.exists(folder):
+        if os.path.isfile(folder):
+            os.remove(folder)
+        else:
+            shutil.rmtree(folder)
+
 def checkResult(fcatOut, force):
     if force:
-        if os.path.exists(fcatOut):
-            shutil.rmtree(fcatOut)
+        deleteFolder('%s/fdogOutput.tar.gz' % fcatOut)
+        deleteFolder('%s/fdogOutput' % fcatOut)
+        deleteFolder('%s/phyloprofileOutput' % fcatOut)
         return(0)
     else:
         if not os.path.exists('%s/phyloprofileOutput/mode1.phyloprofile' % fcatOut):
             if os.path.exists('%s/fdogOutput.tar.gz' % fcatOut):
                 return(1)
             else:
-                if os.path.exists(fcatOut):
-                    shutil.rmtree(fcatOut)
+                # if os.path.exists(fcatOut):
+                #     shutil.rmtree(fcatOut)
                 return(0)
         else:
             return(2)
@@ -516,21 +525,27 @@ def searchOrtho(args):
     force = args.force
     keep = args.keep
 
+    currDir = os.getcwd()
     # check annotation of query species and get query ID
     doAnno = checkQueryAnno(annoQuery, annoDir)
-    queryID = parseQueryFa(query, taxid, outDir, doAnno, annoDir, cpus)
+    queryID = parseQueryFa(coreSet, query, taxid, outDir, doAnno, annoDir, cpus)
     if doAnno == False:
         if os.path.exists(annoDir+'/query.json'):
             os.rename(annoDir+'/query.json', annoDir+'/'+queryID+'.json')
+    # move genome_dir into fcatOutput/coreSet/query folder
+    src = '%s/genome_dir/%s' % (outDir, queryID)
+    dest = '%s/fcatOutput/%s/%s/genome_dir/%s' % (outDir, coreSet, queryID, queryID)
+    if not os.path.exists(dest):
+        shutil.move(src, dest)
     # check old output files
     fcatOut = '%s/fcatOutput/%s/%s' % (outDir, coreSet, queryID)
     status = checkResult(fcatOut, force)
-
     print('Preparing...')
     groupRefspec = {}
     if status == 0:
         (fdogJobs, ignored, groupRefspec) = prepareJob(coreDir, coreSet, queryID, refspecList, outDir, blastDir, annoDir, annoQuery, force, cpus)
         print('Searching orthologs...')
+        os.chdir('%s/fcatOutput/%s/%s' % (outDir, coreSet, queryID))
         pool = mp.Pool(cpus)
         fdogOut = []
         for _ in tqdm(pool.imap_unordered(runFdog, fdogJobs), total=len(fdogJobs)):
@@ -579,14 +594,15 @@ def searchOrtho(args):
 
     if keep == False:
         print('Cleaning up...')
-        if os.path.exists('%s/genome_dir/' % (outDir)):
-            shutil.rmtree('%s/genome_dir/' % (outDir))
+        if os.path.exists('%s/fcatOutput/%s/%s/genome_dir' % (outDir, coreSet, queryID)):
+            shutil.rmtree('%s/fcatOutput/%s/%s/genome_dir' % (outDir, coreSet, queryID))
         if os.path.exists('%s/fdogOutput/' % (fcatOut)):
             shutil.rmtree('%s/fdogOutput/' % (fcatOut))
+    os.chdir(currDir)
     print('Done! Check output in %s' % fcatOut)
 
 def main():
-    version = '0.0.4'
+    version = '0.0.5'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
