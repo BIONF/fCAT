@@ -45,9 +45,12 @@ def addToDict(dict, groupID, seqID, type):
     if not groupID in dict:
         dict[groupID] = '%s\t%s\t%s' % (groupID, type, seqID)
     else:
-        tmp = dict[groupID].split('\t')
-        dict[groupID] = '%s\tduplicated (%s)\t%s' % (tmp[0], tmp[1], tmp[2])
-        dict[groupID] = '%s\n%s\tduplicated (%s)\t%s' % (dict[groupID], groupID, type, seqID)
+        if 'duplicated' in dict[groupID]:
+            dict[groupID] = '%s\n%s\tduplicated (%s)\t%s' % (dict[groupID], groupID, type, seqID)
+        else:
+            tmp = dict[groupID].split('\t')
+            dict[groupID] = '%s\tduplicated (%s)\t%s' % (tmp[0], tmp[1], tmp[2])
+            dict[groupID] = '%s\n%s\tduplicated (%s)\t%s' % (dict[groupID], groupID, type, seqID)
     return(dict)
 
 def mode1(ppFile, coreDir, coreSet, queryID):
@@ -56,7 +59,6 @@ def mode1(ppFile, coreDir, coreSet, queryID):
     for line in readFile(ppFile):
         groupID = line.split('\t')[0]
         if queryID in line.split('\t')[2]:
-            # meanFas = statistics.mean((float(line.split('\t')[3]), float(line.split('\t')[4].strip())))
             meanFas = float(line.split('\t')[3].strip())
             scoreFile = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir/1.cutoff' % (coreDir, coreSet, groupID)
             if os.path.exists(scoreFile):
@@ -140,14 +142,18 @@ def mode4(ppFile, coreDir, coreSet, queryID):
                         meanLen = float(l.split('\t')[1].strip())
                     if l.split('\t')[0] == 'stdevLen':
                         stdevLen = float(l.split('\t')[1].strip())
-                if not stdevLen == 0:
+                if stdevLen > 0:
                     check = abs((length - meanLen) / stdevLen)
                     if check <= 1:
                         assessment = addToDict(assessment, groupID, line.split('\t')[2], 'complete')
                     else:
                         assessment = addToDict(assessment, groupID, line.split('\t')[2], 'fragmented')
                 else:
-                    noCutoff.append(groupID)
+                    if abs(length - meanLen) > 0:
+                        assessment = addToDict(assessment, groupID, line.split('\t')[2], 'complete')
+                    else:
+                        assessment = addToDict(assessment, groupID, line.split('\t')[2], 'fragmented')
+                    # noCutoff.append(groupID)
             else:
                 noCutoff.append(groupID)
     return(assessment, noCutoff)
@@ -159,7 +165,6 @@ def mode5(ppFile, coreDir, coreSet, queryID):
         groupID = line.split('\t')[0]
         # if queryID in line.split('\t')[2]:
         if line.split('\t')[1] == 'ncbi'+str(queryID.split('@')[1]):
-            # meanFas = statistics.mean((float(line.split('\t')[3]), float(line.split('\t')[4].strip())))
             meanFas = float(line.split('\t')[3].strip())
             scoreFile = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir/3.cutoff' % (coreDir, coreSet, groupID)
             if os.path.exists(scoreFile):
@@ -219,6 +224,7 @@ def writeReport(assessment, outDir, coreDir, coreSet, queryID, mode):
     fullFile.close()
     # write summary report
     summaryFile = open('%s/%s/%s/mode_%s/summary.txt' % (outDir, coreSet, queryID, mode), 'w')
+    print('%s/%s/%s/mode_%s/full.txt' % (outDir, coreSet, queryID, mode))
     type = [x.split('\t')[1] for x in open('%s/%s/%s/mode_%s/full.txt' % (outDir, coreSet, queryID, mode)).readlines()]
     print(len(type))
     groupID = [x.split('\t')[0] for x in open('%s/%s/%s/mode_%s/full.txt' % (outDir, coreSet, queryID, mode)).readlines()]
@@ -319,7 +325,7 @@ def assessCompteness(args):
     mergedFull.close()
 
 def main():
-    version = '0.0.7'
+    version = '0.0.8'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')

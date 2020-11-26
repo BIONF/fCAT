@@ -44,6 +44,17 @@ def readFile(file):
         f.close()
         return(lines)
 
+def removeDup(file):
+    if os.path.exists(file):
+        lines_seen = set() # holds lines already seen
+        outfile = open(file+'.temp', 'w')
+        for line in open(file, 'r'):
+            if line not in lines_seen: # not a duplicate
+                outfile.write(line)
+                lines_seen.add(line)
+        outfile.close()
+        os.replace(file+'.temp', file)
+
 def make_archive(source, destination, format):
         base = os.path.basename(destination)
         name = base.split('.')[0]
@@ -259,6 +270,9 @@ def calcFAS(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
     if not mode == 0:
         finalPhyloprofile.close()
         finalDomain.close()
+    # delete duplicate lines
+    removeDup('%s/mode23.phyloprofile' % (phyloprofileDir))
+    removeDup('%s/mode23.domains' % (phyloprofileDir))
     return(missing)
 
 def calcFASall(coreDir, outDir, coreSet, queryID, annoDir, cpus, force, groupRefspec):
@@ -378,6 +392,10 @@ def calcFASall(coreDir, outDir, coreSet, queryID, annoDir, cpus, force, groupRef
             finalDomain.write(domainLine)
         finalDomain.close()
         os.remove('%s/FAS_forward.domains' % (phyloprofileDir))
+    # delete duplicate lines
+    removeDup('%s/mode1.phyloprofile' % (phyloprofileDir))
+    removeDup('%s/mode1.domains' % (phyloprofileDir))
+    removeDup('%s/length.phyloprofile' % (phyloprofileDir))
 
 def calcFAScmd(args):
     (seed, seedIDs, query, anno, out, name) = args
@@ -568,6 +586,8 @@ def searchOrtho(args):
             for g in groupRefspec:
                 refspecFile.write('%s\t%s\n' % (g, groupRefspec[g]))
             refspecFile.close()
+        pool.close()
+        pool.join()
     elif status == 1:
         # untar old fdog output to create phyloprofile files
         shutil.unpack_archive('%s/fdogOutput.tar.gz' % fcatOut, fcatOut + '/', 'gztar')
@@ -608,7 +628,7 @@ def searchOrtho(args):
     print('Done! Check output in %s' % fcatOut)
 
 def main():
-    version = '0.0.7'
+    version = '0.0.8'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')

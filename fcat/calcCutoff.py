@@ -305,6 +305,8 @@ def calcGroupCutoff(args):
                 cutoffOut.append(_)
             with open('%s/core_orthologs/%s/done.txt' % (coreDir, coreSet), 'w') as f:
                 f.write(str(datetime.now()))
+    pool.close()
+    pool.join()
 
 def main():
     version = '0.0.1'
