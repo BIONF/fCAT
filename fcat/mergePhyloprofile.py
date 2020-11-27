@@ -39,7 +39,7 @@ def readFile(file):
             f.close()
             return(lines)
     else:
-        return('NA')
+        sys.exit('%s not found' % file)
 
 def mergePP(args):
     coreDir = os.path.abspath(args.coreDir)

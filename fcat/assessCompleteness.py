@@ -40,7 +40,6 @@ def readFile(file):
             return(lines)
     else:
         sys.exit('%s not found' % file)
-        # return('NA')
 
 def addToDict(dict, groupID, seqID, type):
     if not groupID in dict:

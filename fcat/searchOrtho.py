@@ -37,10 +37,13 @@ def roundTo4(number):
     return("%.4f" % round(number, 4))
 
 def readFile(file):
-    with open(file, 'r') as f:
-        lines = f.readlines()
-        f.close()
-        return(lines)
+    if os.path.exists(file):
+        with open(file, 'r') as f:
+            lines = f.readlines()
+            f.close()
+            return(lines)
+    else:
+        sys.exit('%s not found' % file)
 
 def removeDup(file):
     if os.path.exists(file):
@@ -260,99 +263,99 @@ def calcFASall(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
         except:
             print('\033[91mProblem occurred while running fdogFAS for \'%s\'\033[0m\n%s' % (mergedFa, fdogFAS))
 
-def calcFAScmd(args):
-    (seed, seedIDs, query, anno, out, name) = args
-    if not os.path.exists('%s/%s.tsv' % (out, name)):
-        cmd = 'calcFAS -s %s --seed_id %s -q %s -a %s -o %s --cpus 1 -n %s --domain > /dev/null 2>&1' % (seed, seedIDs, query, anno, out, name)
-        try:
-            subprocess.run([cmd], shell=True, check=True)
-        except:
-            print('\033[91mProblem occurred while running calcFAS\033[0m\n%s' % (cmd))
-
-def calcFAScons(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
-    # output files
-    (mode, phyloprofileDir) = outputMode(outDir, coreSet, queryID, force, 'other')
-    if mode == 1 or mode == 3:
-        finalPhyloprofile = open('%s/mode4.phyloprofile' % (phyloprofileDir), 'w')
-        finalPhyloprofile.write('geneID\tncbiID\torthoID\tFAS\n')
-    elif mode == 2:
-        finalPhyloprofile = open('%s/mode4.phyloprofile' % (phyloprofileDir), 'a')
-    # parse single fdog output
-    missing = []
-    fdogOutDir = '%s/fcatOutput/%s/%s/fdogOutput' % (outDir, coreSet, queryID)
-    calcFASjob = []
-
-    annoDirTmp = '%s/fcatOutput/%s/%s/tmp/anno' % (outDir, coreSet, queryID)
-    Path(annoDirTmp).mkdir(parents=True, exist_ok=True)
-    fasDirOutTmp = '%s/fcatOutput/%s/%s/tmp/fasOut' % (outDir, coreSet, queryID)
-    Path(fasDirOutTmp).mkdir(parents=True, exist_ok=True)
-
-    fdogOutDir = '%s/fcatOutput/%s/%s/fdogOutput' % (outDir, coreSet, queryID)
-    out = os.listdir(fdogOutDir)
-    missing = []
-    for refSpec in out:
-        if os.path.isdir(fdogOutDir + '/' + refSpec):
-            # make calcFAS job for founded orthologs and consensus seq of each group
-            refDir = fdogOutDir + '/' + refSpec
-            groups = os.listdir(refDir)
-            groupFa = '%s/%s.fa' % (annoDirTmp, refSpec)
-            groupFaFile = open(groupFa, 'w')
-            for groupID in groups:
-                if os.path.isdir(refDir + '/' + groupID):
-                    # get seed and query fasta
-                    singleFa = '%s/%s/%s.extended.fa' % (refDir, groupID, groupID)
-                    if os.path.exists(singleFa):
-                        consFa = '%s/core_orthologs/%s/%s/fas_dir/annotation_dir/cons.fa' % (coreDir, coreSet, groupID)
-                        consFaLink = '%s/cons_%s.fa' % (annoDirTmp, groupID)
-                        checkFileExist(consFa, '')
-                        try:
-                            os.symlink(consFa, consFaLink)
-                        except FileExistsError:
-                            os.remove(consFaLink)
-                            os.symlink(consFa, consFaLink)
-                        seedID = []
-                        for s in SeqIO.parse(singleFa, 'fasta'):
-                            if queryID in s.id:
-                                idTmp = s.id.split('|')
-                                seedID.append(idTmp[-2])
-                                groupFaFile.write('>%s\n%s\n' % (idTmp[-2], s.seq))
-                        # get annotations for seed and query
-                        consJson = '%s/core_orthologs/%s/%s/fas_dir/annotation_dir/cons.json' % (coreDir, coreSet, groupID)
-                        consJsonLink = '%s/cons_%s.json' % (annoDirTmp, groupID)
-                        checkFileExist(consJson, '')
-                        try:
-                            os.symlink(consJson, consJsonLink)
-                        except FileExistsError:
-                            os.remove(consJsonLink)
-                            os.symlink(consJson, consJsonLink)
-                        # tmp fas output
-                        calcFASjob.append([groupFa, ' '.join(seedID), consFaLink, annoDirTmp, fasDirOutTmp, groupID])
-                    else:
-                        missing.append(groupID)
-            groupFaFile.close()
-            # get annotation for orthologs
-            if not os.path.exists('%s/%s.json' % (annoDirTmp, refSpec)):
-                extractAnnoCmd = 'annoFAS -i %s -o %s -e -a %s/%s.json -n %s > /dev/null 2>&1' % (groupFa, annoDirTmp, annoDir, queryID, refSpec)
-                try:
-                    subprocess.run([extractAnnoCmd], shell=True, check=True)
-                except:
-                    print('\033[91mProblem occurred while running extracting annotation for \'%s\'\033[0m\n%s' % (groupFa, extractAnnoCmd))
-    # do FAS calculation
-    pool = mp.Pool(cpus)
-    calcFASout = []
-    for _ in tqdm(pool.imap_unordered(calcFAScmd, calcFASjob), total=len(calcFASjob)):
-        calcFASout.append(_)
-    # parse fas output into phyloprofile
-    for tsv in os.listdir(fasDirOutTmp):
-        if os.path.isfile('%s/%s' % (fasDirOutTmp, tsv)):
-            for line in readFile('%s/%s' % (fasDirOutTmp, tsv)):
-                if not line.split('\t')[0] == 'Seed':
-                    groupID = tsv.split('.')[0]
-                    ncbiID = 'ncbi' + str(queryID.split('@')[1])
-                    orthoID = line.split('\t')[0]
-                    fas = roundTo4(float(line.split('\t')[2].split('/')[0]))
-                    finalPhyloprofile.write('%s\t%s\t%s\t%s\n' % (groupID, ncbiID, orthoID, fas))
-    finalPhyloprofile.close()
+# def calcFAScmd(args):
+#     (seed, seedIDs, query, anno, out, name) = args
+#     if not os.path.exists('%s/%s.tsv' % (out, name)):
+#         cmd = 'calcFAS -s %s --seed_id %s -q %s -a %s -o %s --cpus 1 -n %s --domain > /dev/null 2>&1' % (seed, seedIDs, query, anno, out, name)
+#         try:
+#             subprocess.run([cmd], shell=True, check=True)
+#         except:
+#             print('\033[91mProblem occurred while running calcFAS\033[0m\n%s' % (cmd))
+#
+# def calcFAScons(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
+#     # output files
+#     (mode, phyloprofileDir) = outputMode(outDir, coreSet, queryID, force, 'other')
+#     if mode == 1 or mode == 3:
+#         finalPhyloprofile = open('%s/mode4.phyloprofile' % (phyloprofileDir), 'w')
+#         finalPhyloprofile.write('geneID\tncbiID\torthoID\tFAS\n')
+#     elif mode == 2:
+#         finalPhyloprofile = open('%s/mode4.phyloprofile' % (phyloprofileDir), 'a')
+#     # parse single fdog output
+#     missing = []
+#     fdogOutDir = '%s/fcatOutput/%s/%s/fdogOutput' % (outDir, coreSet, queryID)
+#     calcFASjob = []
+#
+#     annoDirTmp = '%s/fcatOutput/%s/%s/tmp/anno' % (outDir, coreSet, queryID)
+#     Path(annoDirTmp).mkdir(parents=True, exist_ok=True)
+#     fasDirOutTmp = '%s/fcatOutput/%s/%s/tmp/fasOut' % (outDir, coreSet, queryID)
+#     Path(fasDirOutTmp).mkdir(parents=True, exist_ok=True)
+#
+#     fdogOutDir = '%s/fcatOutput/%s/%s/fdogOutput' % (outDir, coreSet, queryID)
+#     out = os.listdir(fdogOutDir)
+#     missing = []
+#     for refSpec in out:
+#         if os.path.isdir(fdogOutDir + '/' + refSpec):
+#             # make calcFAS job for founded orthologs and consensus seq of each group
+#             refDir = fdogOutDir + '/' + refSpec
+#             groups = os.listdir(refDir)
+#             groupFa = '%s/%s.fa' % (annoDirTmp, refSpec)
+#             groupFaFile = open(groupFa, 'w')
+#             for groupID in groups:
+#                 if os.path.isdir(refDir + '/' + groupID):
+#                     # get seed and query fasta
+#                     singleFa = '%s/%s/%s.extended.fa' % (refDir, groupID, groupID)
+#                     if os.path.exists(singleFa):
+#                         consFa = '%s/core_orthologs/%s/%s/fas_dir/annotation_dir/cons.fa' % (coreDir, coreSet, groupID)
+#                         consFaLink = '%s/cons_%s.fa' % (annoDirTmp, groupID)
+#                         checkFileExist(consFa, '')
+#                         try:
+#                             os.symlink(consFa, consFaLink)
+#                         except FileExistsError:
+#                             os.remove(consFaLink)
+#                             os.symlink(consFa, consFaLink)
+#                         seedID = []
+#                         for s in SeqIO.parse(singleFa, 'fasta'):
+#                             if queryID in s.id:
+#                                 idTmp = s.id.split('|')
+#                                 seedID.append(idTmp[-2])
+#                                 groupFaFile.write('>%s\n%s\n' % (idTmp[-2], s.seq))
+#                         # get annotations for seed and query
+#                         consJson = '%s/core_orthologs/%s/%s/fas_dir/annotation_dir/cons.json' % (coreDir, coreSet, groupID)
+#                         consJsonLink = '%s/cons_%s.json' % (annoDirTmp, groupID)
+#                         checkFileExist(consJson, '')
+#                         try:
+#                             os.symlink(consJson, consJsonLink)
+#                         except FileExistsError:
+#                             os.remove(consJsonLink)
+#                             os.symlink(consJson, consJsonLink)
+#                         # tmp fas output
+#                         calcFASjob.append([groupFa, ' '.join(seedID), consFaLink, annoDirTmp, fasDirOutTmp, groupID])
+#                     else:
+#                         missing.append(groupID)
+#             groupFaFile.close()
+#             # get annotation for orthologs
+#             if not os.path.exists('%s/%s.json' % (annoDirTmp, refSpec)):
+#                 extractAnnoCmd = 'annoFAS -i %s -o %s -e -a %s/%s.json -n %s > /dev/null 2>&1' % (groupFa, annoDirTmp, annoDir, queryID, refSpec)
+#                 try:
+#                     subprocess.run([extractAnnoCmd], shell=True, check=True)
+#                 except:
+#                     print('\033[91mProblem occurred while running extracting annotation for \'%s\'\033[0m\n%s' % (groupFa, extractAnnoCmd))
+#     # do FAS calculation
+#     pool = mp.Pool(cpus)
+#     calcFASout = []
+#     for _ in tqdm(pool.imap_unordered(calcFAScmd, calcFASjob), total=len(calcFASjob)):
+#         calcFASout.append(_)
+#     # parse fas output into phyloprofile
+#     for tsv in os.listdir(fasDirOutTmp):
+#         if os.path.isfile('%s/%s' % (fasDirOutTmp, tsv)):
+#             for line in readFile('%s/%s' % (fasDirOutTmp, tsv)):
+#                 if not line.split('\t')[0] == 'Seed':
+#                     groupID = tsv.split('.')[0]
+#                     ncbiID = 'ncbi' + str(queryID.split('@')[1])
+#                     orthoID = line.split('\t')[0]
+#                     fas = roundTo4(float(line.split('\t')[2].split('/')[0]))
+#                     finalPhyloprofile.write('%s\t%s\t%s\t%s\n' % (groupID, ncbiID, orthoID, fas))
+#     finalPhyloprofile.close()
 
 def deleteFolder(folder):
     if os.path.exists(folder):
