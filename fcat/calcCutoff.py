@@ -243,12 +243,12 @@ def calcCutoff(args):
             rateUCL = list(limits.rx2[2])
             UCL = 1/rateLCL[0]
             LCL = 1/rateUCL[0]
-            groupOut.write('median\t%s\n' % statistics.median(groupPair))
-            groupOut.write('mean\t%s\n' % statistics.mean(groupPair))
-            groupOut.write('LCL\t%s\n' % LCL)
-            groupOut.write('UCL\t%s\n' % UCL)
+            groupOut.write('median\t%s\n' % roundTo4(statistics.median(groupPair)))
+            groupOut.write('mean\t%s\n' % roundTo4(statistics.mean(groupPair)))
+            groupOut.write('LCL\t%s\n' % roundTo4(LCL))
+            groupOut.write('UCL\t%s\n' % roundTo4(UCL))
         else:
-            singleOut.write('%s\t%s\t%s\n' % (key, statistics.mean(fasScores[key]['score']), fasScores[key]['gene']))
+            singleOut.write('%s\t%s\t%s\n' % (key, roundTo4(statistics.mean(fasScores[key]['score'])), fasScores[key]['gene']))
     # get mean and stddev length for each group
     groupFa = '%s/core_orthologs/%s/%s/%s.fa' % (coreDir, coreSet, groupID, groupID)
     groupLen = []
@@ -309,7 +309,7 @@ def calcGroupCutoff(args):
     pool.join()
 
 def main():
-    version = '0.0.1'
+    version = '0.0.2'
     parser = argparse.ArgumentParser(description='You are running fcat.cutoff version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
