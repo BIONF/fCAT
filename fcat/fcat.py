@@ -54,8 +54,8 @@ def fcat(args):
     cpus = args.cpus
     if cpus >= mp.cpu_count():
         cpus = mp.cpu_count()-1
-    doAnno = fcatO.checkQueryAnno(args.annoQuery, annoDir, args.taxid, args.querySpecies)
-    args.queryID = fcatO.parseQueryFa(args.coreSet, os.path.abspath(args.querySpecies), str(args.taxid), outDir, doAnno, annoDir, cpus)
+    (doAnno, queryTaxId) = fcatO.checkQueryAnno(args.annoQuery, annoDir, args.taxid, args.querySpecies)
+    args.queryID = fcatO.parseQueryFa(args.coreSet, os.path.abspath(args.querySpecies), args.annoQuery, str(args.taxid), outDir, doAnno, annoDir, cpus)
 
     # create phyloprofile files
     print('##### Creating phylogenetic profiles....')

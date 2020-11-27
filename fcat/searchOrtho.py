@@ -89,7 +89,7 @@ def checkQueryAnno(annoQuery, annoDir, taxid, query):
         doAnno = False
     return(doAnno, id)
 
-def parseQueryFa(coreSet, query, taxid, outDir, doAnno, annoDir, cpus):
+def parseQueryFa(coreSet, query, annoQuery, taxid, outDir, doAnno, annoDir, cpus):
     queryID = query.split('/')[-1].split('.')[0]
     queryIDtmp = queryID.split('@')
     if not (len(queryIDtmp) == 3 and isInt(queryIDtmp[1])):
@@ -100,7 +100,8 @@ def parseQueryFa(coreSet, query, taxid, outDir, doAnno, annoDir, cpus):
             if doAnno == False:
                 addTaxon = addTaxon + ' --noAnno'
             else:
-                print('Annotation for %s not given!' % queryID)
+                if annoQuery == '':
+                    print('Annotation for %s not given! It will take a while for annotating...' % queryID)
             try:
                 addTaxonOut = subprocess.run([addTaxon], shell=True, capture_output=True, check=True)
             except:
@@ -414,7 +415,7 @@ def searchOrtho(args):
     currDir = os.getcwd()
     # check annotation of query species and get query ID
     (doAnno, queryTaxId) = checkQueryAnno(annoQuery, annoDir, taxid, query)
-    queryID = parseQueryFa(coreSet, query, taxid, outDir, doAnno, annoDir, cpus)
+    queryID = parseQueryFa(coreSet, query, annoQuery, taxid, outDir, doAnno, annoDir, cpus)
     if doAnno == False:
         if os.path.exists( '%s/query_%s.json' % (annoDir, queryTaxId)):
             os.rename ('%s/query_%s.json' % (annoDir, queryTaxId), annoDir+'/'+queryID+'.json')

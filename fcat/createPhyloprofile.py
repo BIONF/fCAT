@@ -33,10 +33,13 @@ def roundTo4(number):
     return("%.4f" % round(float(number), 4))
 
 def readFile(file):
-    with open(file, 'r') as f:
-        lines = f.readlines()
-        f.close()
-        return(lines)
+    if os.path.exists(file):
+        with open(file, 'r') as f:
+            lines = f.readlines()
+            f.close()
+            return(lines)
+    else:
+        sys.exit('%s not found' % file)
 
 def removeDup(file):
     if os.path.exists(file):
@@ -178,18 +181,19 @@ def createProfile1(coreDir, outDir, coreSet, queryID, force, groupRefspec):
                         ppCore = '%s\t%s\t%s|1\t%s\n' % (groupIDmod, 'ncbi' + str(tax.split('\t')[0].split('@')[1]), tax.split('\t')[2].strip(), roundTo4(tax.split('\t')[1]))
                         finalPhyloprofile.write(ppCore)
         # add missing groups
-        for missingGr in readFile('%s/fcatOutput/%s/%s/missing.txt' % (outDir, coreSet, queryID)):
-            meanCoreFile = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir/2.cutoff' % (coreDir, coreSet, missingGr.strip())
-            for tax in readFile(meanCoreFile):
-                if not tax.split('\t')[0] == 'taxa':
-                    # not include core taxon that have the same taxonomy ID as query
-                    if queryID.split('@')[1] == groupRefspec[missingGr.strip()].split('@')[1]:
-                        if not tax.split('\t')[0] == groupRefspec[missingGr.strip()]:
+        if os.path.exists('%s/fcatOutput/%s/%s/missing.txt' % (outDir, coreSet, queryID)):
+            for missingGr in readFile('%s/fcatOutput/%s/%s/missing.txt' % (outDir, coreSet, queryID)):
+                meanCoreFile = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir/2.cutoff' % (coreDir, coreSet, missingGr.strip())
+                for tax in readFile(meanCoreFile):
+                    if not tax.split('\t')[0] == 'taxa':
+                        # not include core taxon that have the same taxonomy ID as query
+                        if queryID.split('@')[1] == groupRefspec[missingGr.strip()].split('@')[1]:
+                            if not tax.split('\t')[0] == groupRefspec[missingGr.strip()]:
+                                ppCore = '%s\t%s\t%s|1\t%s\n' % (missingGr.strip(), 'ncbi' + str(tax.split('\t')[0].split('@')[1]), tax.split('\t')[2].strip(), roundTo4(tax.split('\t')[1]))
+                                finalPhyloprofile.write(ppCore)
+                        else:
                             ppCore = '%s\t%s\t%s|1\t%s\n' % (missingGr.strip(), 'ncbi' + str(tax.split('\t')[0].split('@')[1]), tax.split('\t')[2].strip(), roundTo4(tax.split('\t')[1]))
                             finalPhyloprofile.write(ppCore)
-                    else:
-                        ppCore = '%s\t%s\t%s|1\t%s\n' % (missingGr.strip(), 'ncbi' + str(tax.split('\t')[0].split('@')[1]), tax.split('\t')[2].strip(), roundTo4(tax.split('\t')[1]))
-                        finalPhyloprofile.write(ppCore)
         finalPhyloprofile.close()
 
         # length phyloprofile file and final fasta file
