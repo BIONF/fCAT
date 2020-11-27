@@ -74,7 +74,7 @@ def createProfile23(coreDir, outDir, coreSet, queryID, force):
     # output files
     (mode, phyloprofileDir) = outputMode(outDir, coreSet, queryID, force, 'other')
     if mode == 1 or mode == 3:
-        finalPhyloprofile = open('%s/mode23.phyloprofile' % (phyloprofileDir), 'w')
+        finalPhyloprofile = open('%s/mode2.phyloprofile' % (phyloprofileDir), 'w')
         finalPhyloprofile.write('geneID\tncbiID\torthoID\tFAS\n')
         finalDomain = open('%s/mode23.domains' % (phyloprofileDir), 'w')
     # parse into phyloprofile file
@@ -128,8 +128,9 @@ def createProfile23(coreDir, outDir, coreSet, queryID, force):
         finalPhyloprofile.close()
         finalDomain.close()
     # delete duplicate lines
-    removeDup('%s/mode23.phyloprofile' % (phyloprofileDir))
+    removeDup('%s/mode2.phyloprofile' % (phyloprofileDir))
     removeDup('%s/mode23.domains' % (phyloprofileDir))
+    shutil.copy('%s/mode2.phyloprofile' % (phyloprofileDir), '%s/mode3.phyloprofile' % (phyloprofileDir))
 
 def createProfile1(coreDir, outDir, coreSet, queryID, force, groupRefspec):
     # output files
@@ -274,7 +275,7 @@ def createPhyloProfile(args):
                 shutil.rmtree('%s/fdogOutput/' % (fcatOut))
 
 def main():
-    version = '0.0.9'
+    version = '0.0.10'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')

@@ -342,10 +342,10 @@ def doAssessment(ppDir, coreDir, coreSet, queryID, outDir, mode):
         ppFile = '%s/mode1.phyloprofile' % (ppDir)
         (assessment, noCutoff) = mode1(ppFile, missingGr, coreDir, coreSet, queryID)
     elif mode == 2:
-        ppFile = '%s/mode23.phyloprofile' % (ppDir)
+        ppFile = '%s/mode2.phyloprofile' % (ppDir)
         (assessment, noCutoff) = mode2(ppFile, missingGr, coreDir, coreSet, queryID, outDir)
     elif mode == 3:
-        ppFile = '%s/mode23.phyloprofile' % (ppDir)
+        ppFile = '%s/mode3.phyloprofile' % (ppDir)
         (assessment, noCutoff) = mode3(ppFile, missingGr, coreDir, coreSet, queryID)
     elif mode == 4:
         ppFile = '%s/length.phyloprofile' % (ppDir)
@@ -420,7 +420,7 @@ def assessCompteness(args):
     mergedFull.close()
 
 def main():
-    version = '0.0.9'
+    version = '0.0.10'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')

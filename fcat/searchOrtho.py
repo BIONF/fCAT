@@ -26,8 +26,6 @@ import shutil
 from tqdm import tqdm
 import time
 import datetime
-# import tarfile
-# import re
 
 def checkFileExist(file, msg):
     if not os.path.exists(os.path.abspath(file)):
@@ -487,7 +485,7 @@ def searchOrtho(args):
     print('Done! Check output in %s' % fcatOut)
 
 def main():
-    version = '0.0.9'
+    version = '0.0.10'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
