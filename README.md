@@ -56,7 +56,7 @@ Besides, if you have already run *fCAT* for several query taxa with the same fCA
 
 # fCAT score modes
 
-The table below explains how the *specific ortholog group cutoffs* for each fCAT core set were calculated, and which *value of the query ortholog* is used to assess its completeness, or more precisely, its functional equivalence to the ortholog group it belongs to. If the value of a query ortholog is not less than its ortholog group cutoff, that group will be evaluated as **similar** or **complete**. In case co-orthologs have been predicted, the assessment for the core group will be **duplicated**. Depending on the value of each single ortholog, a *duplicated* group can be seen as **duplicated (similar)** or **duplicated (dissimilar)** in the full report (e.g. *all_full.txt*).
+The table below explains how the *specific ortholog group cutoffs* for each fCAT core set were calculated, and which *value of the query ortholog* is used to assess its completeness, or more precisely, its functional equivalence to the ortholog group it belongs to. If the value of a query ortholog is *not less than* its ortholog group cutoff, that group will be evaluated as **similar** or **complete**. In case co-orthologs have been predicted, the assessment for the core group will be **duplicated**. Depending on the value of each single ortholog, a *duplicated* group can be seen as **duplicated (similar)** or **duplicated (dissimilar)** in the full report (e.g. *all_full.txt*).
 
 | Score mode | Cutoff | Value |
 |---|---|---|
