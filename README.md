@@ -9,7 +9,7 @@ Python package for fCAT, a **f**eature-aware **C**ompleteness **A**ssessment **T
 * [How to install](#how-to-install)
 * [Usage](#usage)
 * [Output](#output)
-* [fCAT score modes](#fCAT-score-modes)
+* [fCAT score modes](#fcat-score-modes)
 * [Bugs](#bugs)
 * [Contributors](#contributors)
 * [Contact](#contact)
@@ -56,7 +56,16 @@ Besides, if you have already run *fCAT* for several query taxa with the same fCA
 
 # fCAT score modes
 
-<will be added>
+The table below explains how the *specific ortholog group cutoffs* for each fCAT core set was calculated, and which *value of the query orthologs* are used to assess its completeness, or more precisely, its functional equivalence to the ortholog group it belongs to. If the value of a query ortholog is not less than its ortholog group cutoff, that group will be evaluated as **similar** or **complete**. In case co-orthologs have been predicted, the assessment for the core group will be **duplicated**. Depending on the value of each single ortholog, a *duplicated* group can be seen as **duplicated (similar)** or **duplicated (dissimilar)** in the full report (e.g. *all_full.txt*).
+
+| Score mode | Cutoff | Value |
+|---|---|---|
+| Mode 1 | Mean of FAS scores between all core orthologs | Mean of FAS scores between query ortholog and all core proteins |
+| Mode 2 | Mean of FAS scores between refspec and all other core orthologs | Mean of FAS scores between query ortholog and refspec protein |
+| Mode 3 | The lower bound of the confidence interval calculated by the distribution of all-vs-all FAS score in a core group | Mean of FAS scores between query ortholog and refspec protein |
+| Mode 4 | Mean and standard deviation of all core protein lengths | Length of query ortholog |
+
+*Note: __FAS scores__ are bidirectional FAS scors; __core protein__ or __core ortholog__ is protein in the core ortholog groups; __query protein__ or __query ortholog__ is ortholog protein of query species; __refspec__ is the specified reference species*
 
 # Bugs
 Any bug reports or comments, suggestions are highly appreciated. Please [open an issue on GitHub](https://github.com/BIONF/fCAT/issues/new) or be in touch via email.
