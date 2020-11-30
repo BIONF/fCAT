@@ -420,7 +420,7 @@ def assessCompteness(args):
     mergedFull.close()
 
 def main():
-    version = '0.0.10'
+    version = '0.0.11'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')

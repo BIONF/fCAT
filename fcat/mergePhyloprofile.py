@@ -54,6 +54,7 @@ def mergePP(args):
     mode1out = []
     mode2out = []
     mode3out = []
+    domainOut = []
     for query in os.listdir(outDir):
         if os.path.isdir(outDir + '/' + query):
             if not query.split('@')[1] in coreTaxaId:
@@ -69,6 +70,10 @@ def mergePP(args):
                     for line in readFile('%s/%s/phyloprofileOutput/mode3.phyloprofile' % (outDir, query)):
                         if not line.strip() in mode3out:
                             mode3out.append(line.strip())
+                if os.path.exists('%s/%s/phyloprofileOutput/mode123.domains' % (outDir, query)):
+                    for line in readFile('%s/%s/phyloprofileOutput/mode123.domains' % (outDir, query)):
+                        if not line.strip() in domainOut:
+                            domainOut.append(line.strip())
     if len(mode1out) > 0:
         mode1File = open('%s/mode1.phyloprofile' % (outDir), 'w')
         mode1File.write('%s\n' % '\n'.join(mode1out))
@@ -81,9 +86,13 @@ def mergePP(args):
         mode3File = open('%s/mode3.phyloprofile' % (outDir), 'w')
         mode3File.write('%s\n' % '\n'.join(mode3out))
         mode3File.close()
+    if len(domainOut) > 0:
+        domainFile = open('%s/mode123.domains' % (outDir), 'w')
+        domainFile.write('%s\n' % '\n'.join(domainOut))
+        domainFile.close()
 
 def main():
-    version = '0.0.10'
+    version = '0.0.11'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     parser.add_argument('-d', '--coreDir', help='Path to core set directory, where folder core_orthologs can be found', action='store', default='', required=True)
     parser.add_argument('-c', '--coreSet', help='Name of core set, which is subfolder within coreDir/core_orthologs/ directory', action='store', default='', required=True)

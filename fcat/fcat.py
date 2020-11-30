@@ -63,13 +63,11 @@ def fcat(args):
 
     # do completeness assessment
     print('##### Generating reports...')
+    fcatM.mergePP(args)
     fcatR.assessCompteness(args)
 
-    # merge phyloprofile output
-    fcatM.mergePP(args)
-
 def main():
-    version = '0.0.10'
+    version = '0.0.11'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
@@ -87,6 +85,7 @@ def main():
     optional.add_argument('--cpus', help='Number of CPUs used for annotation. Default = 4', action='store', default=4, type=int)
     optional.add_argument('--force', help='Force overwrite existing ortholog search and assessment output', action='store_true', default=False)
     optional.add_argument('--forceProfile', help='Force overwrite phylogenetic profiles output', action='store_true', default=False)
+    optional.add_argument('--noDomain', help='Not output feature domain files', action='store_true', default=False)
     optional.add_argument('--keep', help='Keep temporary phyloprofile data', action='store_true', default=False)
     optional.add_argument('--bidirectional', help=argparse.SUPPRESS, action='store_true', default=False)
 

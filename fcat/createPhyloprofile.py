@@ -24,6 +24,9 @@ import shutil
 import time
 import statistics
 import glob
+import multiprocessing as mp
+from tqdm import tqdm
+from greedyFAS.mainFAS import fasInput
 
 def checkFileExist(file, msg):
     if not os.path.exists(os.path.abspath(file)):
@@ -70,75 +73,12 @@ def outputMode(outDir, coreSet, queryID, force, approach):
             mode = 0
     return(mode, phyloprofileDir)
 
-def createProfile23(coreDir, outDir, coreSet, queryID, force):
-    # output files
-    (mode, phyloprofileDir) = outputMode(outDir, coreSet, queryID, force, 'other')
-    if mode == 1 or mode == 3:
-        finalPhyloprofile = open('%s/mode2.phyloprofile' % (phyloprofileDir), 'w')
-        finalPhyloprofile.write('geneID\tncbiID\torthoID\tFAS\n')
-        finalDomain = open('%s/mode23.domains' % (phyloprofileDir), 'w')
-    # parse into phyloprofile file
-    fdogOutDir = '%s/fcatOutput/%s/%s/fdogOutput' % (outDir, coreSet, queryID)
-    out = os.listdir(fdogOutDir)
-    for refSpec in out:
-        if os.path.isdir(fdogOutDir + '/' + refSpec):
-            refDir = fdogOutDir + '/' + refSpec
-            groups = os.listdir(refDir)
-            # move to phyloprofile output dir
-            if not mode == 0:
-                if os.path.exists('%s/%s.phyloprofile' % (refDir, refSpec)):
-                    for line in readFile('%s/%s.phyloprofile' % (refDir, refSpec)):
-                        if queryID in line:
-                            tmpQuery = line.split('\t')
-                            # statistics.mean((float(line.split('\t')[3], float(line.split('\t')[4]))
-                            finalPhyloprofile.write('%s\t%s\t%s\t%s\n' % (tmpQuery[0], tmpQuery[1], tmpQuery[2], roundTo4(statistics.mean((float(line.split('\t')[3]), float(line.split('\t')[4]))))))
-                # append profile of core sequences
-                for groupID in groups:
-                    coreFasDir = '%s/core_orthologs/%s/%s/fas_dir/fasscore_dir' % (coreDir, coreSet, groupID)
-                    for fasFile in glob.glob('%s/*.tsv' % coreFasDir):
-                        if queryID.split('@')[1] == refSpec.split('@')[1]:
-                            if not refSpec in fasFile:
-                                for fLine in readFile(fasFile):
-                                    if refSpec in fLine.split('\t')[0]:
-                                        tmp = fLine.split('\t')
-                                        revFAS = 0
-                                        revFile = '%s/%s.tsv' % (coreFasDir, tmp[0].split('|')[1])
-                                        for revLine in readFile(revFile):
-                                            if tmp[1] == revLine.split('\t')[0]:
-                                                revFAS = revLine.split('\t')[2].split('/')[0]
-                                        coreLine = '%s\t%s\t%s\t%s\n' % (groupID, 'ncbi' + str(tmp[1].split('|')[1].split('@')[1]), tmp[1], roundTo4(statistics.mean((float(tmp[2].split('/')[0]), float(revFAS)))))
-                                        finalPhyloprofile.write(coreLine)
-                        else:
-                            for fLine in readFile(fasFile):
-                                if refSpec in fLine.split('\t')[0]:
-                                    tmp = fLine.split('\t')
-                                    revFAS = 0
-                                    revFile = '%s/%s.tsv' % (coreFasDir, tmp[0].split('|')[1])
-                                    for revLine in readFile(revFile):
-                                        if tmp[1] == revLine.split('\t')[0]:
-                                            revFAS = revLine.split('\t')[2].split('/')[0]
-                                    coreLine = '%s\t%s\t%s\t%s\n' % (groupID, 'ncbi' + str(tmp[1].split('|')[1].split('@')[1]), tmp[1], roundTo4(statistics.mean((float(tmp[2].split('/')[0]), float(revFAS)))))
-                                    finalPhyloprofile.write(coreLine)
-    # parse domain file
-    # if os.path.exists('%s/%s_forward.domains' % (refDir, refSpec)):
-    #     for line in readFile('%s/%s_forward.domains' % (refDir, refSpec)):
-    #         finalDomain.write(line)
-    # finalize
-    if not mode == 0:
-        finalPhyloprofile.close()
-        finalDomain.close()
-    # delete duplicate lines
-    removeDup('%s/mode2.phyloprofile' % (phyloprofileDir))
-    removeDup('%s/mode23.domains' % (phyloprofileDir))
-    shutil.copy('%s/mode2.phyloprofile' % (phyloprofileDir), '%s/mode3.phyloprofile' % (phyloprofileDir))
-
 def createProfile1(coreDir, outDir, coreSet, queryID, force, groupRefspec):
     # output files
     phyloprofileDir = '%s/fcatOutput/%s/%s/phyloprofileOutput' % (outDir, coreSet, queryID)
     (mode, phyloprofileDir) = outputMode(outDir, coreSet, queryID, force, 'mode1')
     if mode == 1 or mode == 3:
         finalFa = open('%s/%s.mod.fa' % (phyloprofileDir, coreSet), 'w')
-        finalDomain = open('%s/mode1.domains' % (phyloprofileDir), 'w')
         finalPhyloprofile = open('%s/mode1.phyloprofile' % (phyloprofileDir), 'w')
         finalPhyloprofile.write('geneID\tncbiID\torthoID\tFAS\n')
         finalLen = open('%s/length.phyloprofile' % (phyloprofileDir), 'w')
@@ -198,38 +138,136 @@ def createProfile1(coreDir, outDir, coreSet, queryID, force, groupRefspec):
         finalPhyloprofile.close()
 
         # length phyloprofile file and final fasta file
+        checkFa = []
         for s in SeqIO.parse(mergedFa, 'fasta'):
             idMod = '_'.join(s.id.split('_')[1:])
             if queryID.split('@')[1] == groupRefspec[groupIDmod].split('@')[1]:
                 if not idMod.split('|')[1] == groupRefspec[idMod.split('|')[0]]:
-                    finalFa.write('>%s\n%s\n' % (idMod, s.seq))
+                    if not idMod in checkFa:
+                        finalFa.write('>%s\n%s\n' % (idMod, s.seq))
+                        checkFa.append(idMod)
                     ppLen = '%s\t%s\t%s\t%s\n' % (idMod.split('|')[0], 'ncbi' + str(idMod.split('|')[1].split('@')[1]), idMod, len(s.seq))
                     finalLen.write(ppLen)
             else:
-                finalFa.write('>%s\n%s\n' % (idMod, s.seq))
+                if not idMod in checkFa:
+                    finalFa.write('>%s\n%s\n' % (idMod, s.seq))
+                    checkFa.append(idMod)
                 ppLen = '%s\t%s\t%s\t%s\n' % (idMod.split('|')[0], 'ncbi' + str(idMod.split('|')[1].split('@')[1]), idMod, len(s.seq))
                 finalLen.write(ppLen)
         finalFa.close()
         finalLen.close()
-
-        # parse domain file
-        # shutil.copyfileobj(open('%s/%s_all_forward.domains' % (fdogOutDir, queryID), 'rb'), finalFwdDomain)
-        # finalFwdDomain.close()
-        # finalDomain = open('%s/mode1.domains' % (phyloprofileDir), 'w')
-        # for domains in readFile('%s/FAS_forward.domains' % (phyloprofileDir)):
-        #     tmp = domains.split('\t')
-        #     mGroup = '_'.join(tmp[0].split('#')[0].split('_')[1:])
-        #     mQuery = '_'.join(tmp[0].split('#')[1].split('_')[1:])
-        #     mSeed = '_'.join(tmp[1].split('_')[1:])
-        #     # if queryID in mSeed:
-        #     domainLine = '%s\t%s\t%s\t%s\t%s\t%s\tNA\tN\n' % (mGroup+'#'+mQuery, mSeed, tmp[2], tmp[3], tmp[4], tmp[5])
-        #     finalDomain.write(domainLine)
-        # finalDomain.close()
-        # os.remove('%s/FAS_forward.domains' % (phyloprofileDir))
     # delete duplicate lines
     removeDup('%s/mode1.phyloprofile' % (phyloprofileDir))
-    removeDup('%s/mode1.domains' % (phyloprofileDir))
     removeDup('%s/length.phyloprofile' % (phyloprofileDir))
+
+def createProfile23(coreDir, outDir, coreSet, queryID, force):
+    # output files
+    (mode, phyloprofileDir) = outputMode(outDir, coreSet, queryID, force, 'other')
+    if mode == 1 or mode == 3:
+        finalPhyloprofile = open('%s/mode2.phyloprofile' % (phyloprofileDir), 'w')
+        finalPhyloprofile.write('geneID\tncbiID\torthoID\tFAS\n')
+    # parse into phyloprofile file
+    fdogOutDir = '%s/fcatOutput/%s/%s/fdogOutput' % (outDir, coreSet, queryID)
+    out = os.listdir(fdogOutDir)
+    for refSpec in out:
+        if os.path.isdir(fdogOutDir + '/' + refSpec):
+            refDir = fdogOutDir + '/' + refSpec
+            groups = os.listdir(refDir)
+            # move to phyloprofile output dir
+            if not mode == 0:
+                if os.path.exists('%s/%s.phyloprofile' % (refDir, refSpec)):
+                    for line in readFile('%s/%s.phyloprofile' % (refDir, refSpec)):
+                        if queryID in line:
+                            tmpQuery = line.split('\t')
+                            # statistics.mean((float(line.split('\t')[3], float(line.split('\t')[4]))
+                            finalPhyloprofile.write('%s\t%s\t%s\t%s\n' % (tmpQuery[0], tmpQuery[1], tmpQuery[2], roundTo4(statistics.mean((float(line.split('\t')[3]), float(line.split('\t')[4]))))))
+                # append profile of core sequences
+                for groupID in groups:
+                    coreFasDir = '%s/core_orthologs/%s/%s/fas_dir/fasscore_dir' % (coreDir, coreSet, groupID)
+                    for fasFile in glob.glob('%s/*.tsv' % coreFasDir):
+                        if queryID.split('@')[1] == refSpec.split('@')[1]:
+                            if not refSpec in fasFile:
+                                for fLine in readFile(fasFile):
+                                    if refSpec in fLine.split('\t')[0]:
+                                        tmp = fLine.split('\t')
+                                        revFAS = 0
+                                        revFile = '%s/%s.tsv' % (coreFasDir, tmp[0].split('|')[1])
+                                        for revLine in readFile(revFile):
+                                            if tmp[1] == revLine.split('\t')[0]:
+                                                revFAS = revLine.split('\t')[2].split('/')[0]
+                                        coreLine = '%s\t%s\t%s\t%s\n' % (groupID, 'ncbi' + str(tmp[1].split('|')[1].split('@')[1]), tmp[1], roundTo4(statistics.mean((float(tmp[2].split('/')[0]), float(revFAS)))))
+                                        finalPhyloprofile.write(coreLine)
+                        else:
+                            for fLine in readFile(fasFile):
+                                if refSpec in fLine.split('\t')[0]:
+                                    tmp = fLine.split('\t')
+                                    revFAS = 0
+                                    revFile = '%s/%s.tsv' % (coreFasDir, tmp[0].split('|')[1])
+                                    for revLine in readFile(revFile):
+                                        if tmp[1] == revLine.split('\t')[0]:
+                                            revFAS = revLine.split('\t')[2].split('/')[0]
+                                    coreLine = '%s\t%s\t%s\t%s\n' % (groupID, 'ncbi' + str(tmp[1].split('|')[1].split('@')[1]), tmp[1], roundTo4(statistics.mean((float(tmp[2].split('/')[0]), float(revFAS)))))
+                                    finalPhyloprofile.write(coreLine)
+    # finalize
+    if not mode == 0:
+        finalPhyloprofile.close()
+    # delete duplicate lines
+    removeDup('%s/mode2.phyloprofile' % (phyloprofileDir))
+    shutil.copy('%s/mode2.phyloprofile' % (phyloprofileDir), '%s/mode3.phyloprofile' % (phyloprofileDir))
+
+def getDomain(args):
+    (jsonFile, groupID, seedIDmod, orthoID, orthoIDmod) = args
+    proteome = fasInput.read_json(jsonFile)["feature"]
+    out = []
+    if orthoID in proteome:
+        for tool in proteome[orthoID]:
+            if not tool == 'length':
+                for feature in proteome[orthoID][tool]:
+                    for instance in proteome[orthoID][tool][feature]["instance"]:
+                        out.append(groupID + "#" + seedIDmod + "\t" + orthoIDmod + "\t" + str(proteome[orthoID]["length"]) +
+                                "\t" + feature + "\t" + str(instance[0]) + "\t" + str(instance[1]) + "\tNA\tN")
+    else:
+        sys.exit('No annotation for %s found in %s' % (orthoID, jsonFile))
+    return('\n'.join(out))
+
+def createDomainFile(coreDir, outDir, coreSet, queryID, refspecFile, ppFile, cpus):
+    # get refspec for each group
+    refTaxid = {}
+    for line in readFile(refspecFile):
+        refTaxid[line.split('\t')[0]] = line.split('\t')[1].strip()
+    # get ortho ID and ref protID from phyloprofile file
+    domainJobs = []
+    for line in readFile(ppFile):
+        if not "geneID" in line:
+            groupID = line.split('\t')[2].split('|')[0]
+            # get ortho ID
+            orthoID = line.split('\t')[2].split('|')[2]
+            taxID = line.split('\t')[2].split('|')[1]
+            if taxID == queryID:
+                jsonFile = '%s/weight_dir/%s.json' % (coreDir, queryID)
+                domainJobs.append((jsonFile, groupID, line.split('\t')[2], orthoID, line.split('\t')[2]))
+            else:
+                jsonFile = '%s/core_orthologs/%s/%s/fas_dir/annotation_dir/%s.json' % (coreDir, coreSet, groupID, groupID)
+                domainJobs.append((jsonFile, groupID, line.split('\t')[2], '%s|%s|%s' % (groupID, taxID, orthoID), line.split('\t')[2]))
+            # get prot ID for refspec
+            cutoff2File = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir/2.cutoff' % (coreDir, coreSet, groupID)
+            for ll in readFile(cutoff2File):
+                if refTaxid[groupID] in ll:
+                    groupJsonFile = '%s/core_orthologs/%s/%s/fas_dir/annotation_dir/%s.json' % (coreDir, coreSet, groupID, groupID)
+                    domainJobs.append((groupJsonFile, groupID, line.split('\t')[2], ll.split('\t')[-1].strip(), ll.split('\t')[-1].strip()+'|1'))
+                    break
+
+    pool = mp.Pool(cpus)
+    domainOut = []
+    for _ in tqdm(pool.imap_unordered(getDomain, list(dict.fromkeys(domainJobs))), total=len(list(dict.fromkeys(domainJobs)))):
+        domainOut.append(_)
+    pool.close()
+    pool.join()
+    # write domain output
+    output = open('%s/fcatOutput/%s/%s/phyloprofileOutput/mode123.domains' % (outDir, coreSet, queryID), 'w')
+    output.write('%s\n' % '\n'.join(domainOut))
+    output.close()
+    removeDup('%s/fcatOutput/%s/%s/phyloprofileOutput/mode123.domains' % (outDir, coreSet, queryID))
 
 def deleteFolder(folder):
     if os.path.exists(folder):
@@ -266,6 +304,8 @@ def createPhyloProfile(args):
             groupRefspec = readRefspecFile('%s/last_refspec.txt' % fcatOut)
             createProfile1(coreDir, outDir, coreSet, queryID, force, groupRefspec)
             createProfile23(coreDir, outDir, coreSet, queryID, force)
+            if args.noDomain == False:
+                createDomainFile(coreDir, outDir, coreSet, queryID, '%s/last_refspec.txt' % fcatOut, '%s/phyloprofileOutput/mode1.phyloprofile' % fcatOut, args.cpus)
         else:
             sys.exit('No last_refspec.txt file found!')
 
@@ -275,7 +315,7 @@ def createPhyloProfile(args):
                 shutil.rmtree('%s/fdogOutput/' % (fcatOut))
 
 def main():
-    version = '0.0.10'
+    version = '0.0.11'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
@@ -284,7 +324,9 @@ def main():
     required.add_argument('--queryID', help='ID of taxon of interest (e.g. HUMAN@9606@3)', action='store', default='', type=str)
     optional.add_argument('-o', '--outDir', help='Path to output directory', action='store', default='')
     optional.add_argument('--force', help='Force overwrite existing data', action='store_true', default=False)
+    optional.add_argument('--noDomain', help='Not output feature domain files', action='store_true', default=False)
     optional.add_argument('--keep', help='Keep temporary phyloprofile data', action='store_true', default=False)
+    optional.add_argument('--cpus', help='Number of CPUs used for annotation. Default = 4', action='store', default=4, type=int)
     args = parser.parse_args()
 
     start = time.time()
