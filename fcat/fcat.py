@@ -32,10 +32,26 @@ def checkFileExist(file):
     if not os.path.exists(os.path.abspath(file)):
         sys.exit('%s not found' % file)
 
+def checkRefspec(coreDir, coreSet, refspecList):
+    taxaFile = '%s/core_orthologs/%s/done.txt' % (coreDir, coreSet)
+    checkFileExist(taxaFile)
+    allTaxa = fcatO.readFile(taxaFile)
+    invalid = []
+    for refspec in refspecList:
+        if not refspec in allTaxa:
+            invalid.append(refspec)
+    if len(invalid) > 0:
+        print('ERROR: Invalid refspec found: %s' % '; '.join(invalid))
+        print('Please use fcat.showTaxa for a list of valid reference taxa!')
+        sys.exit()
+
 def fcat(args):
     # calculate group specific cutoffs
     # print('##### Calculating group specific cutoffs...')
     # fcatC.calcGroupCutoff(args)
+
+    # check for valid refspec
+    checkRefspec(args.coreDir, args.coreSet, str(args.refspecList).split(","))
 
     # search for orthologs and create phylognetic profile files
     print('##### Searching for orthologs...')
@@ -67,7 +83,7 @@ def fcat(args):
     fcatR.assessCompteness(args)
 
 def main():
-    version = '0.0.11'
+    version = '0.0.12'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')

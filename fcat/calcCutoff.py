@@ -63,6 +63,9 @@ def prepareJob(coreDir, coreSet, annoDir, blastDir, bidirectional, force, cpus):
     fasJobs = []
     fasJobsCons = []
     groupRefSpec = {}
+    if force:
+        if os.path.exists('%s/core_orthologs/%s/done.txt' % (coreDir, coreSet)):
+            os.remove('%s/core_orthologs/%s/done.txt' % (coreDir, coreSet))
     if not os.path.exists('%s/core_orthologs/%s/done.txt' % (coreDir, coreSet)):
         if len(groups) > 0:
             for groupID in groups:
@@ -70,6 +73,9 @@ def prepareJob(coreDir, coreSet, annoDir, blastDir, bidirectional, force, cpus):
                 group = '%s/core_orthologs/%s/%s' % (coreDir, coreSet, groupID)
                 if os.path.isdir(group):
                     print(groupID)
+                    if force:
+                        if os.path.exists('%s/fas_dir' % (group)):
+                            shutil.rmtree('%s/fas_dir' % (group))
                     groupFa = '%s/%s.fa' % (group, groupID)
                     annoDirTmp = '%s/fas_dir/annotation_dir/' % (group)
                     Path(annoDirTmp).mkdir(parents=True, exist_ok=True)
@@ -233,10 +239,12 @@ def calcCutoff(args):
     fasOutDir = '%s/core_orthologs/%s/%s/fas_dir/fasscore_dir' % (coreDir, coreSet, groupID)
     fasScores = parseFasOut(fasOutDir, groupRefSpec[groupID])
     # print(groupID)
+    # print(fasScores)
     for key in fasScores:
         if key == 'all':
             groupPair = getGroupPairs(fasScores[key])
             tmp = FloatVector(groupPair)
+            # print(tmp)
             ci = EnvStats.eexp(tmp, ci = 'TRUE')
             limits = ci.rx2('interval').rx2('limits')
             rateLCL = list(limits.rx2[1])
@@ -250,15 +258,20 @@ def calcCutoff(args):
         else:
             singleOut.write('%s\t%s\t%s\n' % (key, roundTo4(statistics.mean(fasScores[key]['score'])), fasScores[key]['gene']))
     # get mean and stddev length for each group
+    coreTaxa = []
     groupFa = '%s/core_orthologs/%s/%s/%s.fa' % (coreDir, coreSet, groupID, groupID)
     groupLen = []
     for s in SeqIO.parse(groupFa, 'fasta'):
         groupLen.append(len(s.seq))
+        taxId = s.id.split('|')[1]
+        if not taxId in coreTaxa:
+            coreTaxa.append(taxId)
     groupOut.write('meanLen\t%s\n' % statistics.mean(groupLen))
     groupOut.write('stdevLen\t%s\n' % statistics.stdev(groupLen))
-
     singleOut.close()
     groupOut.close()
+    # return list of taxa for this core group
+    return(coreTaxa)
 
 def calcGroupCutoff(args):
     coreDir = os.path.abspath(args.coreDir)
@@ -302,14 +315,16 @@ def calcGroupCutoff(args):
         cutoffOut = []
         if len(cutoffJobs) > 0:
             for _ in tqdm(pool.imap_unordered(calcCutoff, cutoffJobs), total=len(cutoffJobs)):
-                cutoffOut.append(_)
+                cutoffOut = cutoffOut + _ #.append(_)
+        if len(cutoffOut) > 0:
             with open('%s/core_orthologs/%s/done.txt' % (coreDir, coreSet), 'w') as f:
-                f.write(str(datetime.now()))
+                f.write('%s\n' % '\n'.join(list(dict.fromkeys(cutoffOut))))
+                f.close()
     pool.close()
     pool.join()
 
 def main():
-    version = '0.0.2'
+    version = '0.0.3'
     parser = argparse.ArgumentParser(description='You are running fcat.cutoff version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')

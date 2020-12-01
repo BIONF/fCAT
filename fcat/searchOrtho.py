@@ -37,7 +37,7 @@ def roundTo4(number):
 def readFile(file):
     if os.path.exists(file):
         with open(file, 'r') as f:
-            lines = f.readlines()
+            lines = f.read().splitlines()
             f.close()
             return(lines)
     else:
@@ -143,7 +143,7 @@ def checkRefspec(refspecList, groupFa):
 def readRefspecFile(refspecFile):
     groupRefspec = {}
     for line in readFile(refspecFile):
-        groupRefspec[line.split('\t')[0]] = line.split('\t')[1].strip()
+        groupRefspec[line.split('\t')[0]] = line.split('\t')[1]
     return(groupRefspec)
 
 def prepareJob(coreDir, coreSet, queryID, refspecList, outDir, blastDir, annoDir, annoQuery, force, cpus):
