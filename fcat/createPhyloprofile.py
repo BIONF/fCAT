@@ -76,7 +76,6 @@ def outputMode(outDir, coreSet, queryID, force, approach):
 def createProfile1(coreDir, outDir, coreSet, queryID, force, groupRefspec):
     # output files
     (mode, phyloprofileDir) = outputMode(outDir, coreSet, queryID, force, 'mode1')
-    print(mode)
     if mode == 1 or mode == 3:
         finalFa = open('%s/%s.mod.fa' % (phyloprofileDir, coreSet), 'w')
         finalPhyloprofile = open('%s/mode1.phyloprofile' % (phyloprofileDir), 'w')
@@ -120,22 +119,6 @@ def createProfile1(coreDir, outDir, coreSet, queryID, force, groupRefspec):
                     else:
                         ppCore = '%s\t%s\t%s|1\t%s\n' % (groupIDmod, 'ncbi' + str(tax.split('\t')[0].split('@')[1]), tax.split('\t')[2].strip(), roundTo4(tax.split('\t')[1]))
                         finalPhyloprofile.write(ppCore)
-        # add missing groups
-        if os.path.exists('%s/fcatOutput/%s/%s/missing.txt' % (outDir, coreSet, queryID)):
-            for missingGr in readFile('%s/fcatOutput/%s/%s/missing.txt' % (outDir, coreSet, queryID)):
-                meanCoreFile = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir/2.cutoff' % (coreDir, coreSet, missingGr)
-                for tax in readFile(meanCoreFile):
-                    if not tax.split('\t')[0] == 'taxa':
-                        # not include core taxon that have the same taxonomy ID as query
-                        if queryID.split('@')[1] == groupRefspec[missingGr].split('@')[1]:
-                            if not tax.split('\t')[0] == groupRefspec[missingGr]:
-                                ppCore = '%s\t%s\t%s|1\t%s\n' % (missingGr, 'ncbi' + str(tax.split('\t')[0].split('@')[1]), tax.split('\t')[2], roundTo4(tax.split('\t')[1]))
-                                finalPhyloprofile.write(ppCore)
-                        else:
-                            ppCore = '%s\t%s\t%s|1\t%s\n' % (missingGr, 'ncbi' + str(tax.split('\t')[0].split('@')[1]), tax.split('\t')[2], roundTo4(tax.split('\t')[1]))
-                            finalPhyloprofile.write(ppCore)
-        finalPhyloprofile.close()
-
         # length phyloprofile file and final fasta file
         checkFa = []
         for s in SeqIO.parse(mergedFa, 'fasta'):
@@ -153,6 +136,28 @@ def createProfile1(coreDir, outDir, coreSet, queryID, force, groupRefspec):
                     checkFa.append(idMod)
                 ppLen = '%s\t%s\t%s\t%s\n' % (idMod.split('|')[0], 'ncbi' + str(idMod.split('|')[1].split('@')[1]), idMod, len(s.seq))
                 finalLen.write(ppLen)
+        # add missing groups
+        if os.path.exists('%s/fcatOutput/%s/%s/missing.txt' % (outDir, coreSet, queryID)):
+            for missingGr in readFile('%s/fcatOutput/%s/%s/missing.txt' % (outDir, coreSet, queryID)):
+                # add to mode2 profile
+                meanCoreFile = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir/2.cutoff' % (coreDir, coreSet, missingGr)
+                for tax in readFile(meanCoreFile):
+                    if not tax.split('\t')[0] == 'taxa':
+                        # not include core taxon that have the same taxonomy ID as query
+                        if queryID.split('@')[1] == groupRefspec[missingGr].split('@')[1]:
+                            if not tax.split('\t')[0] == groupRefspec[missingGr]:
+                                ppCore = '%s\t%s\t%s|1\t%s\n' % (missingGr, 'ncbi' + str(tax.split('\t')[0].split('@')[1]), tax.split('\t')[2], roundTo4(tax.split('\t')[1]))
+                                finalPhyloprofile.write(ppCore)
+                        else:
+                            ppCore = '%s\t%s\t%s|1\t%s\n' % (missingGr, 'ncbi' + str(tax.split('\t')[0].split('@')[1]), tax.split('\t')[2], roundTo4(tax.split('\t')[1]))
+                            finalPhyloprofile.write(ppCore)
+                # add to length profile and fasta file
+                faCoreFile = '%s/core_orthologs/%s/%s/%s.fa' % (coreDir, coreSet, missingGr, missingGr)
+                for sm in SeqIO.parse(faCoreFile, 'fasta'):
+                    finalFa.write('>%s\n%s\n' % (sm.id+'|1', sm.seq))
+                    ppLen = '%s\t%s\t%s\t%s\n' % (sm.id.split('|')[0], 'ncbi' + str(sm.id.split('|')[1].split('@')[1]), sm.id+'|1', len(sm.seq))
+                    finalLen.write(ppLen)
+        finalPhyloprofile.close()
         finalFa.close()
         finalLen.close()
         # delete duplicate lines
@@ -162,7 +167,6 @@ def createProfile1(coreDir, outDir, coreSet, queryID, force, groupRefspec):
 def createProfile23(coreDir, outDir, coreSet, queryID, force):
     # output files
     (mode, phyloprofileDir) = outputMode(outDir, coreSet, queryID, force, 'mode2')
-    print(mode)
     if not mode == 0:
         finalPhyloprofile = open('%s/mode2.phyloprofile' % (phyloprofileDir), 'w')
         finalPhyloprofile.write('geneID\tncbiID\torthoID\tFAS\n')
@@ -231,7 +235,6 @@ def getDomain(args):
 def createDomainFile(coreDir, outDir, coreSet, queryID, refspecFile, ppFile, cpus, force):
     # output files
     (mode, phyloprofileDir) = outputMode(outDir, coreSet, queryID, force, 'mode123')
-    print(mode)
     if not mode == 0:
         finalDomain = open('%s/fcatOutput/%s/%s/phyloprofileOutput/mode123.domains' % (outDir, coreSet, queryID), 'w')
         # get refspec for each group

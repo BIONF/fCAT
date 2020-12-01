@@ -453,7 +453,7 @@ def searchOrtho(args):
         pool.close()
         pool.join()
 
-    if not status == 2:
+    # if not status == 2:
         print('Calculating pairwise FAS scores between query orthologs and sequences of refspec...')
         missing = calcFAS(coreDir, outDir, coreSet, queryID, annoDir, cpus, force)
         print('Calculating FAS scores between query orthologs and all sequences in each core group...')
@@ -485,7 +485,7 @@ def searchOrtho(args):
     print('Done! Check output in %s' % fcatOut)
 
 def main():
-    version = '0.0.11'
+    version = '0.0.12'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')

@@ -79,8 +79,11 @@ def fcat(args):
 
     # do completeness assessment
     print('##### Generating reports...')
-    fcatM.mergePP(args)
     fcatR.assessCompteness(args)
+
+    # merge phyloprofile
+    print('##### Merging phylogenetic profiles of all query taxa...')
+    fcatM.mergePP(args)
 
 def main():
     version = '0.0.12'
