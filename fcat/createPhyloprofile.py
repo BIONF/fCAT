@@ -198,7 +198,7 @@ def createProfile23(coreDir, outDir, coreSet, queryID, force):
                                         for revLine in readFile(revFile):
                                             if tmp[1] == revLine.split('\t')[0]:
                                                 revFAS = revLine.split('\t')[2].split('/')[0]
-                                        coreLine = '%s\t%s\t%s\t%s\n' % (groupID, 'ncbi' + str(tmp[1].split('|')[1].split('@')[1]), tmp[1], roundTo4(statistics.mean((float(tmp[2].split('/')[0]), float(revFAS)))))
+                                        coreLine = '%s\t%s\t%s\t%s\n' % (groupID, 'ncbi' + str(tmp[1].split('|')[1].split('@')[1]), tmp[1]+'|1', roundTo4(statistics.mean((float(tmp[2].split('/')[0]), float(revFAS)))))
                                         finalPhyloprofile.write(coreLine)
                         else:
                             for fLine in readFile(fasFile):
@@ -209,7 +209,7 @@ def createProfile23(coreDir, outDir, coreSet, queryID, force):
                                     for revLine in readFile(revFile):
                                         if tmp[1] == revLine.split('\t')[0]:
                                             revFAS = revLine.split('\t')[2].split('/')[0]
-                                    coreLine = '%s\t%s\t%s\t%s\n' % (groupID, 'ncbi' + str(tmp[1].split('|')[1].split('@')[1]), tmp[1], roundTo4(statistics.mean((float(tmp[2].split('/')[0]), float(revFAS)))))
+                                    coreLine = '%s\t%s\t%s\t%s\n' % (groupID, 'ncbi' + str(tmp[1].split('|')[1].split('@')[1]), tmp[1]+'|1', roundTo4(statistics.mean((float(tmp[2].split('/')[0]), float(revFAS)))))
                                     finalPhyloprofile.write(coreLine)
         # finalize
         finalPhyloprofile.close()
@@ -318,7 +318,7 @@ def createPhyloProfile(args):
                 shutil.rmtree('%s/fdogOutput/' % (fcatOut))
 
 def main():
-    version = '0.0.13'
+    version = '0.0.14'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
