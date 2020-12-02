@@ -79,14 +79,15 @@ def fcat(args):
 
     # do completeness assessment
     print('##### Generating reports...')
-    fcatR.assessCompteness(args)
+    flag = fcatR.assessCompteness(args) # flag=0: no new ppFile needed
 
     # merge phyloprofile
-    print('##### Merging phylogenetic profiles of all query taxa...')
-    fcatM.mergePP(args)
+    if flag == 1:
+        print('##### Merging phylogenetic profiles of all query taxa...')
+        fcatM.mergePP(args)
 
 def main():
-    version = '0.0.12'
+    version = '0.0.13'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')

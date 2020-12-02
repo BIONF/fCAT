@@ -61,10 +61,10 @@ def readRefspecFile(refspecFile):
         groupRefspec[line.split('\t')[0]] = line.split('\t')[1]
     return(groupRefspec)
 
-def outputMode(outDir, coreSet, queryID, force, approach):
+def outputMode(outDir, coreSet, queryID, force, ppFile):
     phyloprofileDir = '%s/fcatOutput/%s/%s/phyloprofileOutput' % (outDir, coreSet, queryID)
     Path(phyloprofileDir).mkdir(parents=True, exist_ok=True)
-    if not os.path.exists('%s/%s.phyloprofile' % (phyloprofileDir, approach)):
+    if not os.path.exists('%s/%s' % (phyloprofileDir, ppFile)):
         mode = 3
     else:
         if force:
@@ -74,13 +74,13 @@ def outputMode(outDir, coreSet, queryID, force, approach):
     return(mode, phyloprofileDir)
 
 def createProfile1(coreDir, outDir, coreSet, queryID, force, groupRefspec):
-    # output files
-    (mode, phyloprofileDir) = outputMode(outDir, coreSet, queryID, force, 'mode1')
+    (mode, phyloprofileDir) = outputMode(outDir, coreSet, queryID, force, queryID+'_mode1.phyloprofile')
     if mode == 1 or mode == 3:
-        finalFa = open('%s/%s.mod.fa' % (phyloprofileDir, coreSet), 'w')
-        finalPhyloprofile = open('%s/mode1.phyloprofile' % (phyloprofileDir), 'w')
+        # output files
+        finalFa = open('%s/%s.mod.fa' % (phyloprofileDir, queryID), 'w')
+        finalPhyloprofile = open('%s/%s_mode1.phyloprofile' % (phyloprofileDir, queryID), 'w')
         finalPhyloprofile.write('geneID\tncbiID\torthoID\tFAS\n')
-        finalLen = open('%s/length.phyloprofile' % (phyloprofileDir), 'w')
+        finalLen = open('%s/%s_length.phyloprofile' % (phyloprofileDir, queryID), 'w')
         finalLen.write('geneID\tncbiID\torthoID\tLength\n')
         # parse into phyloprofile files
         fdogOutDir = '%s/fcatOutput/%s/%s/fdogOutput' % (outDir, coreSet, queryID)
@@ -161,14 +161,14 @@ def createProfile1(coreDir, outDir, coreSet, queryID, force, groupRefspec):
         finalFa.close()
         finalLen.close()
         # delete duplicate lines
-        removeDup('%s/mode1.phyloprofile' % (phyloprofileDir))
-        removeDup('%s/length.phyloprofile' % (phyloprofileDir))
+        removeDup('%s/%s_mode1.phyloprofile' % (phyloprofileDir, queryID))
+        removeDup('%s/%s_length.phyloprofile' % (phyloprofileDir, queryID))
 
 def createProfile23(coreDir, outDir, coreSet, queryID, force):
     # output files
-    (mode, phyloprofileDir) = outputMode(outDir, coreSet, queryID, force, 'mode2')
+    (mode, phyloprofileDir) = outputMode(outDir, coreSet, queryID, force, queryID+'_mode2.phyloprofile')
     if not mode == 0:
-        finalPhyloprofile = open('%s/mode2.phyloprofile' % (phyloprofileDir), 'w')
+        finalPhyloprofile = open('%s/%s_mode2.phyloprofile' % (phyloprofileDir, queryID), 'w')
         finalPhyloprofile.write('geneID\tncbiID\torthoID\tFAS\n')
         # parse into phyloprofile file
         fdogOutDir = '%s/fcatOutput/%s/%s/fdogOutput' % (outDir, coreSet, queryID)
@@ -214,8 +214,8 @@ def createProfile23(coreDir, outDir, coreSet, queryID, force):
         # finalize
         finalPhyloprofile.close()
         # delete duplicate lines
-        removeDup('%s/mode2.phyloprofile' % (phyloprofileDir))
-        shutil.copy('%s/mode2.phyloprofile' % (phyloprofileDir), '%s/mode3.phyloprofile' % (phyloprofileDir))
+        removeDup('%s/%s_mode2.phyloprofile' % (phyloprofileDir, queryID))
+        shutil.copy('%s/%s_mode2.phyloprofile' % (phyloprofileDir, queryID), '%s/%s_mode3.phyloprofile' % (phyloprofileDir, queryID))
 
 def getDomain(args):
     (jsonFile, groupID, seedIDmod, orthoID, orthoIDmod) = args
@@ -234,9 +234,9 @@ def getDomain(args):
 
 def createDomainFile(coreDir, outDir, coreSet, queryID, refspecFile, ppFile, cpus, force):
     # output files
-    (mode, phyloprofileDir) = outputMode(outDir, coreSet, queryID, force, 'mode123')
+    (mode, phyloprofileDir) = outputMode(outDir, coreSet, queryID, force, queryID+'.domains')
     if not mode == 0:
-        finalDomain = open('%s/fcatOutput/%s/%s/phyloprofileOutput/mode123.domains' % (outDir, coreSet, queryID), 'w')
+        finalDomain = open('%s/fcatOutput/%s/%s/phyloprofileOutput/%s.domains' % (outDir, coreSet, queryID, queryID), 'w')
         # get refspec for each group
         refTaxid = readRefspecFile(refspecFile)
         # get parsing job
@@ -270,7 +270,7 @@ def createDomainFile(coreDir, outDir, coreSet, queryID, refspecFile, ppFile, cpu
         # write domain output
         finalDomain.write('%s\n' % '\n'.join(domainOut))
         finalDomain.close()
-        removeDup('%s/fcatOutput/%s/%s/phyloprofileOutput/mode123.domains' % (outDir, coreSet, queryID))
+        removeDup('%s/fcatOutput/%s/%s/phyloprofileOutput/%s.domains' % (outDir, coreSet, queryID, queryID))
 
 def deleteFolder(folder):
     if os.path.exists(folder):
@@ -297,7 +297,7 @@ def createPhyloProfile(args):
 
     if force:
         deleteFolder('%s/phyloprofileOutput' % fcatOut)
-    if not os.path.exists('%s/phyloprofileOutput/mode1.phyloprofile' % fcatOut):
+    if not os.path.exists('%s/phyloprofileOutput/%s_mode1.phyloprofile' % (fcatOut, queryID)):
         if not os.path.exists('%s/fdogOutput'):
             if os.path.exists('%s/fdogOutput.tar.gz' % fcatOut):
                 shutil.unpack_archive('%s/fdogOutput.tar.gz' % fcatOut, fcatOut + '/', 'gztar')
@@ -308,7 +308,7 @@ def createPhyloProfile(args):
             createProfile1(coreDir, outDir, coreSet, queryID, force, groupRefspec)
             createProfile23(coreDir, outDir, coreSet, queryID, force)
             if args.noDomain == False:
-                createDomainFile(coreDir, outDir, coreSet, queryID, '%s/last_refspec.txt' % fcatOut, '%s/phyloprofileOutput/mode1.phyloprofile' % fcatOut, args.cpus, args.force)
+                createDomainFile(coreDir, outDir, coreSet, queryID, '%s/last_refspec.txt' % fcatOut, '%s/phyloprofileOutput/%s_mode1.phyloprofile' % (fcatOut, queryID), args.cpus, args.force)
         else:
             sys.exit('No last_refspec.txt file found!')
 
@@ -318,7 +318,7 @@ def createPhyloProfile(args):
                 shutil.rmtree('%s/fdogOutput/' % (fcatOut))
 
 def main():
-    version = '0.0.12'
+    version = '0.0.13'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')

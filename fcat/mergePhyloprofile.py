@@ -58,41 +58,41 @@ def mergePP(args):
     for query in os.listdir(outDir):
         if os.path.isdir(outDir + '/' + query):
             if not query.split('@')[1] in coreTaxaId:
-                if os.path.exists('%s/%s/phyloprofileOutput/mode1.phyloprofile' % (outDir, query)):
-                    for line in readFile('%s/%s/phyloprofileOutput/mode1.phyloprofile' % (outDir, query)):
+                if os.path.exists('%s/%s/phyloprofileOutput/%s_mode1.phyloprofile' % (outDir, query, query)):
+                    for line in readFile('%s/%s/phyloprofileOutput/%s_mode1.phyloprofile' % (outDir, query, query)):
                         if not line in mode1out:
                             mode1out.append(line)
-                if os.path.exists('%s/%s/phyloprofileOutput/mode2.phyloprofile' % (outDir, query)):
-                    for line in readFile('%s/%s/phyloprofileOutput/mode2.phyloprofile' % (outDir, query)):
+                if os.path.exists('%s/%s/phyloprofileOutput/%s_mode2.phyloprofile' % (outDir, query, query)):
+                    for line in readFile('%s/%s/phyloprofileOutput/%s_mode2.phyloprofile' % (outDir, query, query)):
                         if not line in mode2out:
                             mode2out.append(line)
-                if os.path.exists('%s/%s/phyloprofileOutput/mode3.phyloprofile' % (outDir, query)):
-                    for line in readFile('%s/%s/phyloprofileOutput/mode3.phyloprofile' % (outDir, query)):
+                if os.path.exists('%s/%s/phyloprofileOutput/%s_mode3.phyloprofile' % (outDir, query, query)):
+                    for line in readFile('%s/%s/phyloprofileOutput/%s_mode3.phyloprofile' % (outDir, query, query)):
                         if not line in mode3out:
                             mode3out.append(line)
-                if os.path.exists('%s/%s/phyloprofileOutput/mode123.domains' % (outDir, query)):
-                    for line in readFile('%s/%s/phyloprofileOutput/mode123.domains' % (outDir, query)):
+                if os.path.exists('%s/%s/phyloprofileOutput/%s.domains' % (outDir, query, query)):
+                    for line in readFile('%s/%s/phyloprofileOutput/%s.domains' % (outDir, query, query)):
                         if not line in domainOut:
                             domainOut.append(line)
     if len(mode1out) > 0:
-        mode1File = open('%s/mode1.phyloprofile' % (outDir), 'w')
+        mode1File = open('%s/%s_mode1.phyloprofile' % (outDir, coreSet), 'w')
         mode1File.write('%s\n' % '\n'.join(mode1out))
         mode1File.close()
     if len(mode2out) > 0:
-        mode2File = open('%s/mode2.phyloprofile' % (outDir), 'w')
+        mode2File = open('%s/%s_mode2.phyloprofile' % (outDir, coreSet), 'w')
         mode2File.write('%s\n' % '\n'.join(mode2out))
         mode2File.close()
     if len(mode3out) > 0:
-        mode3File = open('%s/mode3.phyloprofile' % (outDir), 'w')
+        mode3File = open('%s/%s_mode3.phyloprofile' % (outDir, coreSet), 'w')
         mode3File.write('%s\n' % '\n'.join(mode3out))
         mode3File.close()
     if len(domainOut) > 0:
-        domainFile = open('%s/mode123.domains' % (outDir), 'w')
+        domainFile = open('%s/%s.domains' % (outDir, coreSet), 'w')
         domainFile.write('%s\n' % '\n'.join(domainOut))
         domainFile.close()
 
 def main():
-    version = '0.0.12'
+    version = '0.0.13'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     parser.add_argument('-d', '--coreDir', help='Path to core set directory, where folder core_orthologs can be found', action='store', default='', required=True)
     parser.add_argument('-c', '--coreSet', help='Name of core set, which is subfolder within coreDir/core_orthologs/ directory', action='store', default='', required=True)
