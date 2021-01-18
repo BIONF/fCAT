@@ -19,11 +19,11 @@ import sys
 import os
 import argparse
 from pathlib import Path
-from Bio import SeqIO
-import subprocess
-import multiprocessing as mp
+# from Bio import SeqIO
+# import subprocess
+# import multiprocessing as mp
 import shutil
-from tqdm import tqdm
+# from tqdm import tqdm
 import time
 import statistics
 import collections
@@ -64,31 +64,32 @@ def mode1(ppFile, missingGr, coreDir, coreSet, queryID):
     geneCat['missing'] = []
     # validate orthologs
     for line in readFile(ppFile):
-        if len(line.split('\t')) < 5:
-            flag = 1
-        groupID = line.split('\t')[0]
-        if queryID in line.split('\t')[2]:
-            meanFas = float(line.split('\t')[3])
-            scoreFile = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir/1.cutoff' % (coreDir, coreSet, groupID)
-            if os.path.exists(scoreFile):
-                meanGroup = 0
-                for l in readFile(scoreFile):
-                    if l.split('\t')[0] == 'mean':
-                        meanGroup = float(l.split('\t')[1])
-                if meanFas >= meanGroup:
-                    assessment = addToDict(assessment, groupID, line.split('\t')[2], 'similar', meanFas, meanGroup)
-                    geneCat['similar'].append(line+'\t0')
+        if len(line) > 0:
+            if len(line.split('\t')) < 5:
+                flag = 1
+            groupID = line.split('\t')[0]
+            if queryID in line.split('\t')[2]:
+                meanFas = float(line.split('\t')[3])
+                scoreFile = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir/1.cutoff' % (coreDir, coreSet, groupID)
+                if os.path.exists(scoreFile):
+                    meanGroup = 0
+                    for l in readFile(scoreFile):
+                        if l.split('\t')[0] == 'mean':
+                            meanGroup = float(l.split('\t')[1])
+                    if meanFas >= meanGroup:
+                        assessment = addToDict(assessment, groupID, line.split('\t')[2], 'similar', meanFas, meanGroup)
+                        geneCat['similar'].append(line+'\t0')
+                    else:
+                        assessment = addToDict(assessment, groupID, line.split('\t')[2], 'dissimilar', meanFas, meanGroup)
+                        geneCat['dissimilar'].append(line+'\t1')
                 else:
-                    assessment = addToDict(assessment, groupID, line.split('\t')[2], 'dissimilar', meanFas, meanGroup)
-                    geneCat['dissimilar'].append(line+'\t1')
+                    noCutoff.append(groupID)
             else:
-                noCutoff.append(groupID)
-        else:
-            if not groupID == 'geneID':
-                if groupID in missingGr:
-                    geneCat['missing'].append(line+'\t0')
-                else:
-                    geneCat['similar'].append(line+'\t0')
+                if not groupID == 'geneID':
+                    if groupID in missingGr:
+                        geneCat['missing'].append(line+'\t0')
+                    else:
+                        geneCat['similar'].append(line+'\t0')
     if flag == 1:
         # create new pp file
         newPP = '%s.mod' % ppFile
@@ -117,31 +118,32 @@ def mode2(ppFile, missingGr, coreDir, coreSet, queryID, outDir):
         groupRefspec[g.split('\t')[0]] = g.split('\t')[1]
     # validate orthologs
     for line in readFile(ppFile):
-        if len(line.split('\t')) < 5:
-            flag = 1
-        groupID = line.split('\t')[0]
-        if queryID in line.split('\t')[2]:
-            meanFas = float(line.split('\t')[3]) #statistics.mean((float(line.split('\t')[3]), float(line.split('\t')[4].strip())))
-            scoreFile = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir/2.cutoff' % (coreDir, coreSet, groupID)
-            if os.path.exists(scoreFile):
-                meanRefspec = 0
-                for l in readFile(scoreFile):
-                    if l.split('\t')[0] == groupRefspec[groupID].strip():
-                        meanRefspec = float(l.split('\t')[1].strip())
-                if meanFas >= meanRefspec:
-                    assessment = addToDict(assessment, groupID, line.split('\t')[2], 'similar', meanFas, meanRefspec)
-                    geneCat['similar'].append(line+'\t0')
+        if len(line) > 0:
+            if len(line.split('\t')) < 5:
+                flag = 1
+            groupID = line.split('\t')[0]
+            if queryID in line.split('\t')[2]:
+                meanFas = float(line.split('\t')[3]) #statistics.mean((float(line.split('\t')[3]), float(line.split('\t')[4].strip())))
+                scoreFile = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir/2.cutoff' % (coreDir, coreSet, groupID)
+                if os.path.exists(scoreFile):
+                    meanRefspec = 0
+                    for l in readFile(scoreFile):
+                        if l.split('\t')[0] == groupRefspec[groupID].strip():
+                            meanRefspec = float(l.split('\t')[1].strip())
+                    if meanFas >= meanRefspec:
+                        assessment = addToDict(assessment, groupID, line.split('\t')[2], 'similar', meanFas, meanRefspec)
+                        geneCat['similar'].append(line+'\t0')
+                    else:
+                        assessment = addToDict(assessment, groupID, line.split('\t')[2], 'dissimilar', meanFas, meanRefspec)
+                        geneCat['dissimilar'].append(line+'\t1')
                 else:
-                    assessment = addToDict(assessment, groupID, line.split('\t')[2], 'dissimilar', meanFas, meanRefspec)
-                    geneCat['dissimilar'].append(line+'\t1')
+                    noCutoff.append(groupID)
             else:
-                noCutoff.append(groupID)
-        else:
-            if not groupID == 'geneID':
-                if groupID in missingGr:
-                    geneCat['missing'].append(line+'\t0')
-                else:
-                    geneCat['similar'].append(line+'\t0')
+                if not groupID == 'geneID':
+                    if groupID in missingGr:
+                        geneCat['missing'].append(line+'\t0')
+                    else:
+                        geneCat['similar'].append(line+'\t0')
     if flag == 1:
         # create new pp file
         newPP = '%s.mod' % ppFile
@@ -165,35 +167,36 @@ def mode3(ppFile, missingGr, coreDir, coreSet, queryID):
     geneCat['missing'] = []
     # validate orthologs
     for line in readFile(ppFile):
-        if len(line.split('\t')) < 5:
-            flag = 1
-        groupID = line.split('\t')[0]
-        if queryID in line.split('\t')[2]:
-            meanFas = float(line.split('\t')[3]) #statistics.mean((float(line.split('\t')[3]), float(line.split('\t')[4].strip())))
-            scoreFile = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir/1.cutoff' % (coreDir, coreSet, groupID)
-            if os.path.exists(scoreFile):
-                LCL = 0
-                UCL = 0
-                for l in readFile(scoreFile):
-                    if l.split('\t')[0] == 'LCL':
-                        LCL = float(l.split('\t')[1])
-                    if l.split('\t')[0] == 'UCL':
-                        UCL = float(l.split('\t')[1])
-                # if LCL <= meanFas <= UCL:
-                if LCL <= meanFas:
-                    assessment = addToDict(assessment, groupID, line.split('\t')[2], 'similar', meanFas, LCL)
-                    geneCat['similar'].append(line+'\t0')
+        if len(line) > 0:
+            if len(line.split('\t')) < 5:
+                flag = 1
+            groupID = line.split('\t')[0]
+            if queryID in line.split('\t')[2]:
+                meanFas = float(line.split('\t')[3]) #statistics.mean((float(line.split('\t')[3]), float(line.split('\t')[4].strip())))
+                scoreFile = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir/1.cutoff' % (coreDir, coreSet, groupID)
+                if os.path.exists(scoreFile):
+                    LCL = 0
+                    UCL = 0
+                    for l in readFile(scoreFile):
+                        if l.split('\t')[0] == 'LCL':
+                            LCL = float(l.split('\t')[1])
+                        if l.split('\t')[0] == 'UCL':
+                            UCL = float(l.split('\t')[1])
+                    # if LCL <= meanFas <= UCL:
+                    if LCL <= meanFas:
+                        assessment = addToDict(assessment, groupID, line.split('\t')[2], 'similar', meanFas, LCL)
+                        geneCat['similar'].append(line+'\t0')
+                    else:
+                        assessment = addToDict(assessment, groupID, line.split('\t')[2], 'dissimilar', meanFas, LCL)
+                        geneCat['dissimilar'].append(line+'\t1')
                 else:
-                    assessment = addToDict(assessment, groupID, line.split('\t')[2], 'dissimilar', meanFas, LCL)
-                    geneCat['dissimilar'].append(line+'\t1')
+                    noCutoff.append(groupID)
             else:
-                noCutoff.append(groupID)
-        else:
-            if not groupID == 'geneID':
-                if groupID in missingGr:
-                    geneCat['missing'].append(line+'\t0')
-                else:
-                    geneCat['similar'].append(line+'\t0')
+                if not groupID == 'geneID':
+                    if groupID in missingGr:
+                        geneCat['missing'].append(line+'\t0')
+                    else:
+                        geneCat['similar'].append(line+'\t0')
     if flag == 1:
         # create new pp file
         newPP = '%s.mod' % ppFile
@@ -217,44 +220,45 @@ def mode4(ppFile, missingGr, coreDir, coreSet, queryID):
     geneCat['missing'] = []
     # validate orthologs
     for line in readFile(ppFile):
-        if len(line.split('\t')) < 5:
-            flag = 1
         if len(line) > 0:
-            groupID = line.split('\t')[0]
-            if queryID in line.split('\t')[2]:
-                length = float(line.split('\t')[3])
-                scoreFile = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir/1.cutoff' % (coreDir, coreSet, groupID)
-                if os.path.exists(scoreFile):
-                    meanLen = 0
-                    stdevLen = 0
-                    for l in readFile(scoreFile):
-                        if l.split('\t')[0] == 'meanLen':
-                            meanLen = float(l.split('\t')[1])
-                        if l.split('\t')[0] == 'stdevLen':
-                            stdevLen = float(l.split('\t')[1])
-                    if stdevLen > 0:
-                        check = abs((length - meanLen) / stdevLen)
-                        if check <= 1:
-                            assessment = addToDict(assessment, groupID, line.split('\t')[2], 'complete', length, meanLen)
-                            geneCat['similar'].append(line+'\t0')
+            if len(line.split('\t')) < 5:
+                flag = 1
+            if len(line) > 0:
+                groupID = line.split('\t')[0]
+                if queryID in line.split('\t')[2]:
+                    length = float(line.split('\t')[3])
+                    scoreFile = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir/1.cutoff' % (coreDir, coreSet, groupID)
+                    if os.path.exists(scoreFile):
+                        meanLen = 0
+                        stdevLen = 0
+                        for l in readFile(scoreFile):
+                            if l.split('\t')[0] == 'meanLen':
+                                meanLen = float(l.split('\t')[1])
+                            if l.split('\t')[0] == 'stdevLen':
+                                stdevLen = float(l.split('\t')[1])
+                        if stdevLen > 0:
+                            check = abs((length - meanLen) / stdevLen)
+                            if check <= 1:
+                                assessment = addToDict(assessment, groupID, line.split('\t')[2], 'complete', length, meanLen)
+                                geneCat['similar'].append(line+'\t0')
+                            else:
+                                assessment = addToDict(assessment, groupID, line.split('\t')[2], 'fragmented', length, meanLen)
+                                geneCat['dissimilar'].append(line+'\t1')
                         else:
-                            assessment = addToDict(assessment, groupID, line.split('\t')[2], 'fragmented', length, meanLen)
-                            geneCat['dissimilar'].append(line+'\t1')
+                            if abs(length - meanLen) > 0:
+                                assessment = addToDict(assessment, groupID, line.split('\t')[2], 'complete', length, meanLen)
+                                geneCat['similar'].append(line+'\t0')
+                            else:
+                                assessment = addToDict(assessment, groupID, line.split('\t')[2], 'fragmented', length, meanLen)
+                                geneCat['dissimilar'].append(line+'\t1')
                     else:
-                        if abs(length - meanLen) > 0:
-                            assessment = addToDict(assessment, groupID, line.split('\t')[2], 'complete', length, meanLen)
-                            geneCat['similar'].append(line+'\t0')
-                        else:
-                            assessment = addToDict(assessment, groupID, line.split('\t')[2], 'fragmented', length, meanLen)
-                            geneCat['dissimilar'].append(line+'\t1')
+                        noCutoff.append(groupID)
                 else:
-                    noCutoff.append(groupID)
-            else:
-                if not groupID == 'geneID':
-                    if groupID in missingGr:
-                        geneCat['missing'].append(line+'\t0')
-                    else:
-                        geneCat['similar'].append(line+'\t0')
+                    if not groupID == 'geneID':
+                        if groupID in missingGr:
+                            geneCat['missing'].append(line+'\t0')
+                        else:
+                            geneCat['similar'].append(line+'\t0')
     if flag == 1:
         # create new pp file
         newPP = '%s.mod' % ppFile
@@ -327,10 +331,12 @@ def writeReport(assessment, outDir, coreDir, coreSet, queryID, mode):
     fullFile.write('GroupID\tAssessment\tOrthoID\tValue\tCutoff\n')
     for group in assessment:
         fullFile.write('%s\n' % assessment[group])
-    for m in readFile(missing):
-        fullFile.write(m + '\tmissing\n')
-    for i in readFile(ignored):
-        fullFile.write(i + '\tignored\n')
+    if os.path.exists(missing):
+        for m in readFile(missing):
+            fullFile.write(m + '\tmissing\n')
+    if os.path.exists(ignored):
+        for i in readFile(ignored):
+            fullFile.write(i + '\tignored\n')
     fullFile.close()
     # write summary report
     summaryFile = open('%s/%s/%s/mode_%s/summary.txt' % (outDir, coreSet, queryID, mode), 'w')
@@ -452,7 +458,7 @@ def assessCompteness(args):
     return(flag)
 
 def main():
-    version = '0.0.16'
+    version = '0.0.17'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')

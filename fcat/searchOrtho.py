@@ -439,12 +439,12 @@ def searchOrtho(args):
         for _ in tqdm(pool.imap_unordered(runFdog, fdogJobs), total=len(fdogJobs)):
             fdogOut.append(_)
         # write ignored groups and refspec for each group based on given refspec list
+        ignoredFile = open('%s/fcatOutput/%s/%s/ignored.txt' % (outDir, coreSet, queryID), 'w')
         if len(ignored) > 0:
             # print('\033[92mNo species in %s found in core set(s): %s\033[0m' % (refspecList, ','.join(ignored)))
-            ignoredFile = open('%s/fcatOutput/%s/%s/ignored.txt' % (outDir, coreSet, queryID), 'w')
             ignoredFile.write('\n'.join(ignored))
             ignoredFile.write('\n')
-            ignoredFile.close()
+        ignoredFile.close()
         if len(groupRefspec) > 0:
             refspecFile = open('%s/fcatOutput/%s/%s/last_refspec.txt' % (outDir, coreSet, queryID), 'w')
             for g in groupRefspec:
@@ -464,11 +464,11 @@ def searchOrtho(args):
         if os.path.exists('%s/tmp' % fcatOut):
             shutil.rmtree('%s/tmp' % fcatOut)
         # write missing groups
+        missingFile = open('%s/fcatOutput/%s/%s/missing.txt' % (outDir, coreSet, queryID), 'w')
         if len(missing) > 0:
-            missingFile = open('%s/fcatOutput/%s/%s/missing.txt' % (outDir, coreSet, queryID), 'w')
             missingFile.write('\n'.join(missing))
             missingFile.write('\n')
-            missingFile.close()
+        missingFile.close()
 
     if os.path.exists('%s/fdogOutput' % fcatOut):
         try:
@@ -485,7 +485,7 @@ def searchOrtho(args):
     print('Done! Check output in %s' % fcatOut)
 
 def main():
-    version = '0.0.16'
+    version = '0.0.17'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
