@@ -52,27 +52,29 @@ def annoFAS(groupFa, annoDir, cpus, force):
     except:
         print('\033[91mProblem occurred while running annoFAS\033[0m\n%s' % annoFAS)
 
-def getConsensus(alignmentFile, cov):
-    alignment = AlignIO.read(alignmentFile, 'fasta')
-    summary_align = AlignInfo.SummaryInfo(alignment)
-    consensus = summary_align.dumb_consensus(cov) # cov = 0.5 means that only characters that are present in at least 50% sequences will be considered
-    return(consensus)
+# def getConsensus(alignmentFile, cov):
+#     alignment = AlignIO.read(alignmentFile, 'fasta')
+#     summary_align = AlignInfo.SummaryInfo(alignment)
+#     consensus = summary_align.dumb_consensus(cov) # cov = 0.5 means that only characters that are present in at least 50% sequences will be considered
+#     return(consensus)
 
-def prepareJob(coreDir, coreSet, annoDir, blastDir, bidirectional, force, cpus):
+def prepareJob(coreDir, coreSet, annoDir, blastDir, bidirectional, force, forceCutoff, cpus):
     groups = os.listdir(coreDir + '/core_orthologs/' + coreSet)
     fasJobs = []
     fasJobsCons = []
     groupRefSpec = {}
-    if force:
+    gc = 1
+    if force or forceCutoff:
         if os.path.exists('%s/core_orthologs/%s/done.txt' % (coreDir, coreSet)):
             os.remove('%s/core_orthologs/%s/done.txt' % (coreDir, coreSet))
+            groups = os.listdir(coreDir + '/core_orthologs/' + coreSet)
     if not os.path.exists('%s/core_orthologs/%s/done.txt' % (coreDir, coreSet)):
         if len(groups) > 0:
             for groupID in groups:
                 groupRefSpec[groupID] = []
                 group = '%s/core_orthologs/%s/%s' % (coreDir, coreSet, groupID)
                 if os.path.isdir(group):
-                    print(groupID)
+                    print('%s/%s \t %s' % (gc, len(groups), groupID))
                     if force:
                         if os.path.exists('%s/fas_dir' % (group)):
                             shutil.rmtree('%s/fas_dir' % (group))
@@ -82,6 +84,11 @@ def prepareJob(coreDir, coreSet, annoDir, blastDir, bidirectional, force, cpus):
                     outDir = '%s/fas_dir/fasscore_dir/' % (group)
                     Path(outDir).mkdir(parents=True, exist_ok=True)
                     # check existing cutoff files
+                    if forceCutoff:
+                        try:
+                            shutil.rmtree('%s/fas_dir/cutoff_dir' % (group))
+                        except OSError:
+                            pass
                     flag = 0
                     if os.path.exists('%s/fas_dir/cutoff_dir/1.cutoff' % (group)):
                         if not os.stat('%s/fas_dir/cutoff_dir/1.cutoff' % (group)).st_size == 0:
@@ -108,18 +115,19 @@ def prepareJob(coreDir, coreSet, annoDir, blastDir, bidirectional, force, cpus):
                             checkFileExist(refGenome)
                             fasJobs.append([s.id, ref, groupID, groupFa, annoDirTmp, outDir, refGenome, bidirectional, force])
                             groupRefSpec[groupID].append(ref)
-                        ###### consensus approach
-                        # get consensus sequence
-                        groupAln = '%s/%s.aln' % (group, groupID)
-                        consensus = getConsensus(groupAln, 0.5)
-                        consensusFa = '%s/cons.fa' % annoDirTmp
-                        with open(consensusFa, 'w') as cf:
-                            cf.write('>consensus\n%s\n' % consensus)
-                        # do annotation for consensus sequence
-                        if not os.path.exists('%s/consensus.json' % (annoDirTmp)) or force:
-                            annoFAS(consensusFa, annoDirTmp, cpus, force)
-                        # add to fasJobsCons
-                        fasJobsCons.append([coreDir, coreSet, groupID, groupFa, consensusFa, annoDirTmp, outDir, force])
+                        # ###### consensus approach
+                        # # get consensus sequence
+                        # groupAln = '%s/%s.aln' % (group, groupID)
+                        # consensus = getConsensus(groupAln, 0.5)
+                        # consensusFa = '%s/cons.fa' % annoDirTmp
+                        # with open(consensusFa, 'w') as cf:
+                        #     cf.write('>consensus\n%s\n' % consensus)
+                        # # do annotation for consensus sequence
+                        # if not os.path.exists('%s/consensus.json' % (annoDirTmp)) or force:
+                        #     annoFAS(consensusFa, annoDirTmp, cpus, force)
+                        # # add to fasJobsCons
+                        # fasJobsCons.append([coreDir, coreSet, groupID, groupFa, consensusFa, annoDirTmp, outDir, force])
+                gc = gc + 1
         else:
             sys.exit('No core group found at %s' % (coreDir + '/core_orthologs/' + coreSet))
     return(fasJobs, fasJobsCons, groupRefSpec)
@@ -198,32 +206,32 @@ def getGroupPairs(scoreDict):
                 donePair.append(s+'_'+q)
     return(out)
 
-def parseConsFas(args):
-    (coreDir, coreSet, groupID, groupFa, consensusFa, annoDirTmp, outDir, force) = args
-    # calculate fas scores for each sequence (seed) vs consensus (query)
-    fasCmd = 'calcFAS -s \"%s\" -q \"%s\" -a %s -o %s -t 10 --raw --tsv --domain' % (groupFa, consensusFa, annoDirTmp, outDir)
-    try:
-        fasOut = subprocess.run([fasCmd], shell=True, capture_output=True, check=True)
-    except:
-        print('\033[91mProblem occurred while running calcFAS\033[0m\n%s' % fasCmd)
-    cutoffDir = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir' % (coreDir, coreSet, groupID)
-    Path(cutoffDir).mkdir(parents=True, exist_ok=True)
-    singleOut = open(cutoffDir + '/4.cutoff', 'w')
-    singleOut.write('taxa\tcutoff\tgene\n')
-    groupOut = open(cutoffDir + '/3.cutoff', 'w')
-    groupOut.write('label\tvalue\n')
-    allFas = []
-    # save each score into 3.scores
-    for line in fasOut.stdout.decode().split('\n'):
-        if '#\t' in line:
-            tmp = line.split('\t')
-            singleOut.write('%s\t%s\t%s\n' % (tmp[1].split('|')[1], roundTo4(float(tmp[3])), tmp[1]))
-            allFas.append(float(tmp[3]))
-    # and mean to 1.scores
-    groupOut.write('meanCons\t%s\n' % roundTo4(statistics.mean(allFas)))
-    groupOut.write('medianCons\t%s\n' % roundTo4(statistics.median(allFas)))
-    singleOut.close()
-    groupOut.close()
+# def parseConsFas(args):
+#     (coreDir, coreSet, groupID, groupFa, consensusFa, annoDirTmp, outDir, force) = args
+#     # calculate fas scores for each sequence (seed) vs consensus (query)
+#     fasCmd = 'calcFAS -s \"%s\" -q \"%s\" -a %s -o %s -t 10 --raw --tsv --domain' % (groupFa, consensusFa, annoDirTmp, outDir)
+#     try:
+#         fasOut = subprocess.run([fasCmd], shell=True, capture_output=True, check=True)
+#     except:
+#         print('\033[91mProblem occurred while running calcFAS\033[0m\n%s' % fasCmd)
+#     cutoffDir = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir' % (coreDir, coreSet, groupID)
+#     Path(cutoffDir).mkdir(parents=True, exist_ok=True)
+#     singleOut = open(cutoffDir + '/4.cutoff', 'w')
+#     singleOut.write('taxa\tcutoff\tgene\n')
+#     groupOut = open(cutoffDir + '/3.cutoff', 'w')
+#     groupOut.write('label\tvalue\n')
+#     allFas = []
+#     # save each score into 3.scores
+#     for line in fasOut.stdout.decode().split('\n'):
+#         if '#\t' in line:
+#             tmp = line.split('\t')
+#             singleOut.write('%s\t%s\t%s\n' % (tmp[1].split('|')[1], roundTo4(float(tmp[3])), tmp[1]))
+#             allFas.append(float(tmp[3]))
+#     # and mean to 1.scores
+#     groupOut.write('meanCons\t%s\n' % roundTo4(statistics.mean(allFas)))
+#     groupOut.write('medianCons\t%s\n' % roundTo4(statistics.median(allFas)))
+#     singleOut.close()
+#     groupOut.close()
 
 def calcCutoff(args):
     (coreDir, coreSet, groupRefSpec, groupID) = args
@@ -239,7 +247,8 @@ def calcCutoff(args):
     fasOutDir = '%s/core_orthologs/%s/%s/fas_dir/fasscore_dir' % (coreDir, coreSet, groupID)
     fasScores = parseFasOut(fasOutDir, groupRefSpec[groupID])
     # print(groupID)
-    # print(fasScores)
+    # print(groupRefSpec[groupID])
+    #print(fasScores)
     for key in fasScores:
         if key == 'all':
             groupPair = getGroupPairs(fasScores[key])
@@ -291,10 +300,11 @@ def calcGroupCutoff(args):
     if cpus >= mp.cpu_count():
         cpus = mp.cpu_count()-1
     bidirectional = args.bidirectional
-    force = args.forceCutoff
+    force = args.forceCutoffFas
+    forceCutoff = args.forceCutoff
 
     print('Preparing...')
-    (fasJobs, fasJobsCons, groupRefSpec) = prepareJob(coreDir, coreSet, annoDir, blastDir, bidirectional, force, cpus)
+    (fasJobs, fasJobsCons, groupRefSpec) = prepareJob(coreDir, coreSet, annoDir, blastDir, bidirectional, force, forceCutoff, cpus)
 
     print('Calculating fas scores...')
     pool = mp.Pool(cpus)
@@ -302,10 +312,10 @@ def calcGroupCutoff(args):
         fasOut = []
         for _ in tqdm(pool.imap_unordered(calcFAS, fasJobs), total=len(fasJobs)):
             fasOut.append(_)
-    if len(fasJobsCons) > 0:
-        fasOutCons = []
-        for _ in tqdm(pool.imap_unordered(parseConsFas, fasJobsCons), total=len(fasJobsCons)):
-            fasOutCons.append(_)
+    # if len(fasJobsCons) > 0:
+    #     fasOutCons = []
+    #     for _ in tqdm(pool.imap_unordered(parseConsFas, fasJobsCons), total=len(fasJobsCons)):
+    #         fasOutCons.append(_)
 
     if len(groupRefSpec) > 0:
         print('Calculating cutoffs...')
@@ -324,7 +334,7 @@ def calcGroupCutoff(args):
     pool.join()
 
 def main():
-    version = '0.0.3'
+    version = '0.0.4'
     parser = argparse.ArgumentParser(description='You are running fcat.cutoff version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
@@ -334,7 +344,8 @@ def main():
     optional.add_argument('-b', '--blastDir', help='Path to BLAST directory of all core species', action='store', default='')
     optional.add_argument('--cpus', help='Number of CPUs used for annotation. Default = 4', action='store', default=4, type=int)
     optional.add_argument('--bidirectional', help=argparse.SUPPRESS, action='store_true', default=False)
-    optional.add_argument('--forceCutoff', help='Force overwrite existing data', action='store_true', default=False)
+    optional.add_argument('--forceCutoffFas', help='Force overwrite existing data (FAS and cutoff)', action='store_true', default=False)
+    optional.add_argument('--forceCutoff', help='Force overwrite cutoff data', action='store_true', default=False)
     args = parser.parse_args()
 
     start = time.time()

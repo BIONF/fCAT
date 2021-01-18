@@ -452,7 +452,7 @@ def assessCompteness(args):
     return(flag)
 
 def main():
-    version = '0.0.14'
+    version = '0.0.15'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
