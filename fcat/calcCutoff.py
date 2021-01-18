@@ -248,22 +248,29 @@ def calcCutoff(args):
     fasScores = parseFasOut(fasOutDir, groupRefSpec[groupID])
     # print(groupID)
     # print(groupRefSpec[groupID])
-    #print(fasScores)
+    # print(fasScores)
     for key in fasScores:
         if key == 'all':
             groupPair = getGroupPairs(fasScores[key])
-            tmp = FloatVector(groupPair)
-            # print(tmp)
-            ci = EnvStats.eexp(tmp, ci = 'TRUE')
-            limits = ci.rx2('interval').rx2('limits')
-            rateLCL = list(limits.rx2[1])
-            rateUCL = list(limits.rx2[2])
-            UCL = 1/rateLCL[0]
-            LCL = 1/rateUCL[0]
-            groupOut.write('median\t%s\n' % roundTo4(statistics.median(groupPair)))
-            groupOut.write('mean\t%s\n' % roundTo4(statistics.mean(groupPair)))
-            groupOut.write('LCL\t%s\n' % roundTo4(LCL))
-            groupOut.write('UCL\t%s\n' % roundTo4(UCL))
+            # print(groupPair)
+            if all(v == 0 for v in groupPair):
+                groupOut.write('median\t0.0\n')
+                groupOut.write('mean\t0.0\n')
+                groupOut.write('LCL\t0.0\n')
+                groupOut.write('UCL\t0.0\n')
+            else:
+                tmp = FloatVector(groupPair)
+                # print(tmp)
+                ci = EnvStats.eexp(tmp, ci = 'TRUE')
+                limits = ci.rx2('interval').rx2('limits')
+                rateLCL = list(limits.rx2[1])
+                rateUCL = list(limits.rx2[2])
+                UCL = 1/rateLCL[0]
+                LCL = 1/rateUCL[0]
+                groupOut.write('median\t%s\n' % roundTo4(statistics.median(groupPair)))
+                groupOut.write('mean\t%s\n' % roundTo4(statistics.mean(groupPair)))
+                groupOut.write('LCL\t%s\n' % roundTo4(LCL))
+                groupOut.write('UCL\t%s\n' % roundTo4(UCL))
         else:
             singleOut.write('%s\t%s\t%s\n' % (key, roundTo4(statistics.mean(fasScores[key]['score'])), fasScores[key]['gene']))
     # get mean and stddev length for each group
@@ -334,7 +341,7 @@ def calcGroupCutoff(args):
     pool.join()
 
 def main():
-    version = '0.0.4'
+    version = '0.0.5'
     parser = argparse.ArgumentParser(description='You are running fcat.cutoff version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
