@@ -50,8 +50,9 @@ def removeDup(file):
         outfile = open(file+'.temp', 'w')
         for line in open(file, 'r'):
             if line not in lines_seen: # not a duplicate
-                outfile.write(line)
-                lines_seen.add(line)
+                if not len(line.strip()) == 0: # not empty
+                    outfile.write(line)
+                    lines_seen.add(line)
         outfile.close()
         os.replace(file+'.temp', file)
 
@@ -318,7 +319,7 @@ def createPhyloProfile(args):
                 shutil.rmtree('%s/fdogOutput/' % (fcatOut))
 
 def main():
-    version = '0.0.17'
+    version = '0.0.18'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')

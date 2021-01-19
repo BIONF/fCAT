@@ -282,8 +282,8 @@ def calcCutoff(args):
         taxId = s.id.split('|')[1]
         if not taxId in coreTaxa:
             coreTaxa.append(taxId)
-    groupOut.write('meanLen\t%s\n' % statistics.mean(groupLen))
-    groupOut.write('stdevLen\t%s\n' % statistics.stdev(groupLen))
+    groupOut.write('meanLen\t%s\n' % round(statistics.mean(groupLen), 2))
+    groupOut.write('stdevLen\t%s\n' % round(statistics.stdev(groupLen), 2))
     singleOut.close()
     groupOut.close()
     # return list of taxa for this core group
