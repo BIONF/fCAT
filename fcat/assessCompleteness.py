@@ -237,7 +237,7 @@ def mode4(ppFile, missingGr, coreDir, coreSet, queryID):
                             if l.split('\t')[0] == 'stdevLen':
                                 stdevLen = float(l.split('\t')[1])
                         if stdevLen > 0:
-                            check = abs((length - meanLen) / stdevLen)
+                            check = abs((length - meanLen) / (2 * stdevLen))
                             if check <= 1:
                                 assessment = addToDict(assessment, groupID, line.split('\t')[2], 'complete', length, meanLen)
                                 geneCat['similar'].append(line+'\t0')
@@ -245,7 +245,7 @@ def mode4(ppFile, missingGr, coreDir, coreSet, queryID):
                                 assessment = addToDict(assessment, groupID, line.split('\t')[2], 'fragmented', length, meanLen)
                                 geneCat['dissimilar'].append(line+'\t1')
                         else:
-                            if abs(length - meanLen) > 0:
+                            if (length - meanLen) > 0:
                                 assessment = addToDict(assessment, groupID, line.split('\t')[2], 'complete', length, meanLen)
                                 geneCat['similar'].append(line+'\t0')
                             else:
