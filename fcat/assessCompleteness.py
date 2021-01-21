@@ -254,7 +254,7 @@ def mode4(ppFile, missingGr, coreDir, coreSet, queryID):
                                 # geneCat['dissimilar'].append(line+'\t1')
                                 geneCat['similar'].append('\t'.join(line.split('\t')[0:-1])+'\t0')
                         else:
-                            if (length - meanLen) > 0:
+                            if (length - meanLen) >= 0:
                                 assessment = addToDict(assessment, groupID, line.split('\t')[2], 'complete', length, '%s (sd=%s)' % (meanLen, stdevLen))
                                 # geneCat['similar'].append(line+'\t0')
                                 geneCat['similar'].append('\t'.join(line.split('\t')[0:-1])+'\t1')
@@ -473,7 +473,7 @@ def assessCompteness(args):
     return(flag)
 
 def main():
-    version = '0.0.18'
+    version = '0.0.19'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
