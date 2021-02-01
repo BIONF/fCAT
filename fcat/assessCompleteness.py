@@ -409,7 +409,9 @@ def mergeReports(args):
     mergedStat = open('%s/%s/%s/report_summary.txt' % (outDir, coreSet, queryID), 'w')
     mergedStat.write('mode\tgenomeID\tsimilar\tdissimilar\tduplicated\tmissing\tignored\ttotal\n')
     mergedFull = open('%s/%s/%s/report_full.txt' % (outDir, coreSet, queryID), 'w')
+    mergedDismiss = open('%s/%s/%s/report_dismiss.txt' % (outDir, coreSet, queryID), 'w')
     fullTypeDict = {}
+    dismissTypeDict = {}
     availableMode = []
     for m in modes:
         availableMode.append('%s_cat\t%s_value\t%s_cutoff\t%s_delta' % (m,m,m,m))
@@ -434,9 +436,15 @@ def mergeReports(args):
                     if not key in fullTypeDict:
                         fullTypeDict[key] = []
                     fullTypeDict[key].append('%s\t%s\t%s\t%s' % (tmp[1], value, cutoff, delta))
+                    if tmp[1] == 'missing' or tmp[1] == 'dissimilar' or tmp[1] == 'fragmented':
+                        dismissTypeDict[key] = 1
+
     mergedFull.write('groupID\torthoID\t%s\n' % '\t'.join(availableMode))
+    mergedDismiss.write('groupID\torthoID\t%s\n' % '\t'.join(availableMode))
     for gid in fullTypeDict:
         mergedFull.write('%s\t%s\n' % (gid, '\t'.join(fullTypeDict[gid])))
+        if gid in dismissTypeDict:
+            mergedDismiss.write('%s\t%s\n' % (gid, '\t'.join(fullTypeDict[gid])))
     mergedStat.close()
     mergedFull.close()
     # delete report for singe mode
@@ -478,7 +486,7 @@ def assessCompteness(args):
     return(flag)
 
 def main():
-    version = '0.0.21'
+    version = '0.0.22'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
