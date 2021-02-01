@@ -47,6 +47,9 @@ def removeEmptyLine(file):
         nf.close()
         os.replace(file+'.temp', file)
 
+def roundTo4(number):
+    return("%.4f" % round(number, 4))
+
 def addToDict(dict, groupID, seqID, type, value, cutoff):
     if not groupID in dict:
         dict[groupID] = '%s\t%s\t%s\t%s\t%s' % (groupID, type, seqID, value, cutoff)
@@ -246,20 +249,20 @@ def mode4(ppFile, missingGr, coreDir, coreSet, queryID):
                         if stdevLen > 0:
                             check = abs((length - meanLen) / (2 * stdevLen))
                             if check <= 1:
-                                assessment = addToDict(assessment, groupID, line.split('\t')[2], 'complete', length, '%s (sd=%s)' % (meanLen, stdevLen))
+                                assessment = addToDict(assessment, groupID, line.split('\t')[2], 'complete', length, '%s (sd=%s)' % (roundTo4(meanLen), roundTo4(stdevLen)))
                                 # geneCat['similar'].append(line+'\t0')
                                 geneCat['similar'].append('\t'.join(line.split('\t')[0:-1])+'\t1')
                             else:
-                                assessment = addToDict(assessment, groupID, line.split('\t')[2], 'fragmented', length, '%s (sd=%s)' % (meanLen, stdevLen))
+                                assessment = addToDict(assessment, groupID, line.split('\t')[2], 'fragmented', length, '%s (sd=%s)' % (roundTo4(meanLen), roundTo4(stdevLen)))
                                 # geneCat['dissimilar'].append(line+'\t1')
                                 geneCat['similar'].append('\t'.join(line.split('\t')[0:-1])+'\t0')
                         else:
                             if (length - meanLen) >= 0:
-                                assessment = addToDict(assessment, groupID, line.split('\t')[2], 'complete', length, '%s (sd=%s)' % (meanLen, stdevLen))
+                                assessment = addToDict(assessment, groupID, line.split('\t')[2], 'complete', length, '%s (sd=%s)' % (roundTo4(meanLen), roundTo4(stdevLen)))
                                 # geneCat['similar'].append(line+'\t0')
                                 geneCat['similar'].append('\t'.join(line.split('\t')[0:-1])+'\t1')
                             else:
-                                assessment = addToDict(assessment, groupID, line.split('\t')[2], 'fragmented', length, '%s (sd=%s)' % (meanLen, stdevLen))
+                                assessment = addToDict(assessment, groupID, line.split('\t')[2], 'fragmented', length, '%s (sd=%s)' % (roundTo4(meanLen), roundTo4(stdevLen)))
                                 # geneCat['dissimilar'].append(line+'\t1')
                                 geneCat['similar'].append('\t'.join(line.split('\t')[0:-1])+'\t0')
                     else:
@@ -400,6 +403,45 @@ def doAssessment(ppDir, coreDir, coreSet, queryID, outDir, mode):
     removeEmptyLine(ppFile)
     return(noCutoff, stat, flag)
 
+def mergeReports(args):
+    (outDir, coreSet, queryID) = args
+    modes = ('mode_1', 'mode_2', 'mode_3', 'mode_4')
+    mergedStat = open('%s/%s/%s/report_summary.txt' % (outDir, coreSet, queryID), 'w')
+    mergedStat.write('mode\tgenomeID\tsimilar\tdissimilar\tduplicated\tmissing\tignored\ttotal\n')
+    mergedFull = open('%s/%s/%s/report_full.txt' % (outDir, coreSet, queryID), 'w')
+    fullTypeDict = {}
+    availableMode = []
+    for m in modes:
+        availableMode.append('%s_cat\t%s_value\t%s_cutoff' % (m,m,m))
+        if os.path.exists('%s/%s/%s/%s/summary.txt' % (outDir, coreSet, queryID, m)):
+            for line in readFile('%s/%s/%s/%s/summary.txt' % (outDir, coreSet, queryID, m)):
+                if not line.split('\t')[0] == 'genomeID':
+                    mergedStat.write('%s\t%s\n' % (m, line))
+        if os.path.exists('%s/%s/%s/%s/full.txt' % (outDir, coreSet, queryID, m)):
+            for line in readFile('%s/%s/%s/%s/full.txt' % (outDir, coreSet, queryID, m)):
+                tmp = line.split('\t') # 1488235at2759	dissimilar	1488235at2759|TRINE@6336@1|T07_14825.1|1	0.5566	0.7034
+                if not tmp[0] == 'GroupID':
+                    orthoID = 'NA'
+                    value = 'NA'
+                    cutoff = 'NA'
+                    if len(tmp) == 5:
+                        orthoID = tmp[2]
+                        value = tmp[-2]
+                        cutoff = tmp[-1]
+                    key = '%s\t%s' % (tmp[0], orthoID)
+                    if not key in fullTypeDict:
+                        fullTypeDict[key] = []
+                    fullTypeDict[key].append('%s\t%s\t%s' % (tmp[1], value, cutoff))
+    mergedFull.write('groupID\torthoID\t%s\n' % '\t'.join(availableMode))
+    for gid in fullTypeDict:
+        mergedFull.write('%s\t%s\n' % (gid, '\t'.join(fullTypeDict[gid])))
+    mergedStat.close()
+    mergedFull.close()
+    # delete report for singe mode
+    for m in modes:
+        if os.path.exists('%s/%s/%s/%s/summary.txt' % (outDir, coreSet, queryID, m)):
+            shutil.rmtree('%s/%s/%s/%s' % (outDir, coreSet, queryID, m))
+
 def assessCompteness(args):
     coreDir = os.path.abspath(args.coreDir)
     coreSet = args.coreSet
@@ -429,51 +471,12 @@ def assessCompteness(args):
             print('\033[92mWARNING: No cutoff for %s group(s):\033[0m\n%s\n' % (len(noCutoff), ','.join(noCutoff)))
         if stat:
             print(stat)
-
     # merge all report (if available)
-    modes = ('mode_1', 'mode_2', 'mode_3', 'mode_4')
-    mergedStat = open('%s/%s/%s/all_summary.txt' % (outDir, coreSet, queryID), 'w')
-    mergedStat.write('mode\tgenomeID\tsimilar\tdissimilar\tduplicated\tmissing\tignored\ttotal\n')
-    mergedFull = open('%s/%s/%s/all_full.txt' % (outDir, coreSet, queryID), 'w')
-    fullTypeDict = {}
-    fullOrthoDict = {}
-    availableMode = []
-    for m in modes:
-        availableMode.append(m)
-        if os.path.exists('%s/%s/%s/%s/summary.txt' % (outDir, coreSet, queryID, m)):
-            for line in readFile('%s/%s/%s/%s/summary.txt' % (outDir, coreSet, queryID, m)):
-                if not line.split('\t')[0] == 'genomeID':
-                    mergedStat.write('%s\t%s\n' % (m, line))
-        if os.path.exists('%s/%s/%s/%s/full.txt' % (outDir, coreSet, queryID, m)):
-            for line in readFile('%s/%s/%s/%s/full.txt' % (outDir, coreSet, queryID, m)):
-                tmp = line.split('\t') # 1488235at2759	dissimilar	1488235at2759|TRINE@6336@1|T07_14825.1|1	0.5566	0.7034
-                if not tmp[0] == 'GroupID':
-                    orthoID = 'NA'
-                    if len(tmp) == 5:
-                        orthoID = tmp[2]
-                    if 'duplicated' in tmp[1]:
-                        if not tmp[0] in fullTypeDict:
-                            # fullTypeDict[tmp[0]] = []
-                            fullOrthoDict[tmp[0]] = orthoID
-                            fullTypeDict[tmp[0]] = ['duplicated','duplicated','duplicated','duplicated']#.append('duplicated')
-                        else:
-                            if (not orthoID == 'NA') & (not orthoID in fullOrthoDict[tmp[0]]):
-                                fullOrthoDict[tmp[0]] = fullOrthoDict[tmp[0]] + ';' + orthoID
-                            # fullTypeDict[tmp[0]].append('duplicated')
-                    else:
-                        if not tmp[0] in fullTypeDict:
-                            fullTypeDict[tmp[0]] = []
-                            fullOrthoDict[tmp[0]] = orthoID
-                        fullTypeDict[tmp[0]].append(tmp[1])
-    mergedFull.write('groupID\t%s\torthoID\n' % '\t'.join(availableMode))
-    for gid in fullTypeDict:
-        mergedFull.write('%s\t%s\t%s\n' % (gid, '\t'.join(fullTypeDict[gid]), fullOrthoDict[gid]))
-    mergedStat.close()
-    mergedFull.close()
+    mergeReports((outDir, coreSet, queryID))
     return(flag)
 
 def main():
-    version = '0.0.19'
+    version = '0.0.20'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')

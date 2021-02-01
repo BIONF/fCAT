@@ -19,14 +19,6 @@ import sys
 import os
 import argparse
 from pathlib import Path
-# from Bio import SeqIO
-# import subprocess
-# import multiprocessing as mp
-# import shutil
-# from tqdm import tqdm
-# import time
-# import statistics
-# import collections
 
 def checkFileExist(file, msg):
     if not os.path.exists(os.path.abspath(file)):
@@ -92,7 +84,7 @@ def mergePP(args):
         domainFile.close()
 
 def main():
-    version = '0.0.19'
+    version = '0.0.20'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     parser.add_argument('-d', '--coreDir', help='Path to core set directory, where folder core_orthologs can be found', action='store', default='', required=True)
     parser.add_argument('-c', '--coreSet', help='Name of core set, which is subfolder within coreDir/core_orthologs/ directory', action='store', default='', required=True)

@@ -419,7 +419,7 @@ def searchOrtho(args):
     queryID = parseQueryFa(coreSet, query, annoQuery, taxid, outDir, doAnno, annoDir, cpus)
     if doAnno == False:
         if os.path.exists( '%s/query_%s.json' % (annoDir, queryTaxId)):
-            os.rename ('%s/query_%s.json' % (annoDir, queryTaxId), annoDir+'/'+queryID+'.json')
+            os.rename('%s/query_%s.json' % (annoDir, queryTaxId), annoDir+'/'+queryID+'.json')
     # move genome_dir into fcatOutput/coreSet/query folder
     src = '%s/genome_dir/%s' % (outDir, queryID)
     dest = '%s/fcatOutput/%s/%s/genome_dir/%s' % (outDir, coreSet, queryID, queryID)
@@ -485,7 +485,7 @@ def searchOrtho(args):
     print('Done! Check output in %s' % fcatOut)
 
 def main():
-    version = '0.0.19'
+    version = '0.0.20'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')

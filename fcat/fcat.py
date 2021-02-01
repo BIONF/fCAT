@@ -72,6 +72,9 @@ def fcat(args):
         cpus = mp.cpu_count()-1
     (doAnno, queryTaxId) = fcatO.checkQueryAnno(args.annoQuery, annoDir, args.taxid, args.querySpecies)
     args.queryID = fcatO.parseQueryFa(args.coreSet, os.path.abspath(args.querySpecies), args.annoQuery, str(args.taxid), outDir, doAnno, annoDir, cpus)
+    if doAnno == False:
+        if os.path.exists( '%s/query_%s.json' % (annoDir, queryTaxId)):
+            os.remove('%s/query_%s.json' % (annoDir, queryTaxId))
 
     # create phyloprofile files
     print('##### Creating phylogenetic profiles....')
@@ -87,7 +90,7 @@ def fcat(args):
         fcatM.mergePP(args)
 
 def main():
-    version = '0.0.19'
+    version = '0.0.20'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
