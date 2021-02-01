@@ -412,7 +412,7 @@ def mergeReports(args):
     fullTypeDict = {}
     availableMode = []
     for m in modes:
-        availableMode.append('%s_cat\t%s_value\t%s_cutoff' % (m,m,m))
+        availableMode.append('%s_cat\t%s_value\t%s_cutoff\t%s_delta' % (m,m,m,m))
         if os.path.exists('%s/%s/%s/%s/summary.txt' % (outDir, coreSet, queryID, m)):
             for line in readFile('%s/%s/%s/%s/summary.txt' % (outDir, coreSet, queryID, m)):
                 if not line.split('\t')[0] == 'genomeID':
@@ -424,14 +424,16 @@ def mergeReports(args):
                     orthoID = 'NA'
                     value = 'NA'
                     cutoff = 'NA'
+                    delta = 'NA'
                     if len(tmp) == 5:
                         orthoID = tmp[2]
                         value = tmp[-2]
                         cutoff = tmp[-1]
+                        delta = abs(float(value) - float(cutoff.split(' ')[0]))
                     key = '%s\t%s' % (tmp[0], orthoID)
                     if not key in fullTypeDict:
                         fullTypeDict[key] = []
-                    fullTypeDict[key].append('%s\t%s\t%s' % (tmp[1], value, cutoff))
+                    fullTypeDict[key].append('%s\t%s\t%s\t%s' % (tmp[1], value, cutoff, delta))
     mergedFull.write('groupID\torthoID\t%s\n' % '\t'.join(availableMode))
     for gid in fullTypeDict:
         mergedFull.write('%s\t%s\n' % (gid, '\t'.join(fullTypeDict[gid])))
@@ -476,7 +478,7 @@ def assessCompteness(args):
     return(flag)
 
 def main():
-    version = '0.0.20'
+    version = '0.0.21'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
