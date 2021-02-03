@@ -5,7 +5,7 @@ install:
   - sudo apt-get install -y r-base
   - pip install .
 script:
-  - python3 fcat/searchOrtho.py -h
+  - fcat -h
   - fcat.report -h
 sdeploy:
   provider: pypi
