@@ -26,33 +26,7 @@ import shutil
 from tqdm import tqdm
 import time
 import datetime
-
-def checkFileExist(file, msg):
-    if not os.path.exists(os.path.abspath(file)):
-        sys.exit('%s not found! %s' % (file, msg))
-
-def roundTo4(number):
-    return("%.4f" % round(number, 4))
-
-def readFile(file):
-    if os.path.exists(file):
-        with open(file, 'r') as f:
-            lines = f.read().splitlines()
-            f.close()
-            return(lines)
-    else:
-        sys.exit('%s not found' % file)
-
-def removeDup(file):
-    if os.path.exists(file):
-        lines_seen = set() # holds lines already seen
-        outfile = open(file+'.temp', 'w')
-        for line in open(file, 'r'):
-            if line not in lines_seen: # not a duplicate
-                outfile.write(line)
-                lines_seen.add(line)
-        outfile.close()
-        os.replace(file+'.temp', file)
+import fcat.functions as fcatFn
 
 def make_archive(source, destination, format):
         base = os.path.basename(destination)
@@ -80,7 +54,7 @@ def checkQueryAnno(annoQuery, annoDir, taxid, query):
         id = queryIDtmp[1]
     if not annoQuery == '':
         annoQuery = os.path.abspath(annoQuery)
-        checkFileExist(annoQuery, '')
+        fcatFn.checkFileExist(annoQuery, '')
         if not annoDir in annoQuery:
             try:
                 os.symlink(annoQuery, '%s/query_%s.json' % (annoDir, id))
@@ -142,7 +116,7 @@ def checkRefspec(refspecList, groupFa):
 
 def readRefspecFile(refspecFile):
     groupRefspec = {}
-    for line in readFile(refspecFile):
+    for line in fcatFn.readFile(refspecFile):
         groupRefspec[line.split('\t')[0]] = line.split('\t')[1]
     return(groupRefspec)
 
@@ -305,7 +279,7 @@ def calcFASall(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
 #                     if os.path.exists(singleFa):
 #                         consFa = '%s/core_orthologs/%s/%s/fas_dir/annotation_dir/cons.fa' % (coreDir, coreSet, groupID)
 #                         consFaLink = '%s/cons_%s.fa' % (annoDirTmp, groupID)
-#                         checkFileExist(consFa, '')
+#                         fcatFn.checkFileExist(consFa, '')
 #                         try:
 #                             os.symlink(consFa, consFaLink)
 #                         except FileExistsError:
@@ -320,7 +294,7 @@ def calcFASall(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
 #                         # get annotations for seed and query
 #                         consJson = '%s/core_orthologs/%s/%s/fas_dir/annotation_dir/cons.json' % (coreDir, coreSet, groupID)
 #                         consJsonLink = '%s/cons_%s.json' % (annoDirTmp, groupID)
-#                         checkFileExist(consJson, '')
+#                         fcatFn.checkFileExist(consJson, '')
 #                         try:
 #                             os.symlink(consJson, consJsonLink)
 #                         except FileExistsError:
@@ -346,27 +320,20 @@ def calcFASall(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
 #     # parse fas output into phyloprofile
 #     for tsv in os.listdir(fasDirOutTmp):
 #         if os.path.isfile('%s/%s' % (fasDirOutTmp, tsv)):
-#             for line in readFile('%s/%s' % (fasDirOutTmp, tsv)):
+#             for line in fcatFn.readFile('%s/%s' % (fasDirOutTmp, tsv)):
 #                 if not line.split('\t')[0] == 'Seed':
 #                     groupID = tsv.split('.')[0]
 #                     ncbiID = 'ncbi' + str(queryID.split('@')[1])
 #                     orthoID = line.split('\t')[0]
-#                     fas = roundTo4(float(line.split('\t')[2].split('/')[0]))
+#                     fas = fcatFn.roundTo4(float(line.split('\t')[2].split('/')[0]))
 #                     finalPhyloprofile.write('%s\t%s\t%s\t%s\n' % (groupID, ncbiID, orthoID, fas))
 #     finalPhyloprofile.close()
 
-def deleteFolder(folder):
-    if os.path.exists(folder):
-        if os.path.isfile(folder):
-            os.remove(folder)
-        else:
-            shutil.rmtree(folder)
-
 def checkResult(fcatOut, force):
     if force:
-        deleteFolder('%s/fdogOutput.tar.gz' % fcatOut)
-        deleteFolder('%s/fdogOutput' % fcatOut)
-        deleteFolder('%s/phyloprofileOutput' % fcatOut)
+        fcatFn.deleteFolder('%s/fdogOutput.tar.gz' % fcatOut)
+        fcatFn.deleteFolder('%s/fdogOutput' % fcatOut)
+        fcatFn.deleteFolder('%s/phyloprofileOutput' % fcatOut)
         return(0)
     else:
         if not os.path.exists('%s/phyloprofileOutput/mode1.phyloprofile' % fcatOut):
@@ -382,12 +349,12 @@ def checkResult(fcatOut, force):
 def searchOrtho(args):
     coreDir = os.path.abspath(args.coreDir)
     coreSet = args.coreSet
-    checkFileExist(coreDir + '/core_orthologs/' + coreSet, '')
+    fcatFn.checkFileExist(coreDir + '/core_orthologs/' + coreSet, '')
     refspecList = str(args.refspecList).split(",")
     if len(refspecList) == 0:
         sys.exit('No refefence species given! Please specify reference taxa using --refspecList option!')
     query = args.querySpecies
-    checkFileExist(os.path.abspath(query), '')
+    fcatFn.checkFileExist(os.path.abspath(query), '')
     query = os.path.abspath(query)
     taxid = str(args.taxid)
     outDir = args.outDir
@@ -399,12 +366,12 @@ def searchOrtho(args):
     if blastDir == '':
         blastDir = '%s/blast_dir' % coreDir
     blastDir = os.path.abspath(blastDir)
-    checkFileExist(blastDir, 'Please set path to blastDB using --blastDir option.')
+    fcatFn.checkFileExist(blastDir, 'Please set path to blastDB using --blastDir option.')
     annoDir = args.annoDir
     if annoDir == '':
         annoDir = '%s/weight_dir' % coreDir
     annoDir = os.path.abspath(annoDir)
-    checkFileExist(annoDir, 'Please set path to annotation directory using --annoDir option.')
+    fcatFn.checkFileExist(annoDir, 'Please set path to annotation directory using --annoDir option.')
     annoQuery = args.annoQuery
 
     cpus = args.cpus
@@ -477,7 +444,7 @@ def searchOrtho(args):
             print('Cannot archiving fdog output!')
 
     if keep == False:
-        deleteFolder('%s/fcatOutput/%s/%s/genome_dir' % (outDir, coreSet, queryID))
+        fcatFn.deleteFolder('%s/fcatOutput/%s/%s/genome_dir' % (outDir, coreSet, queryID))
         # # print('Cleaning up...') ### no idea why rmtree not works :(
         # if os.path.exists('%s/fcatOutput/%s/%s/genome_dir' % (outDir, coreSet, queryID)):
         #     shutil.rmtree('%s/fcatOutput/%s/%s/genome_dir' % (outDir, coreSet, queryID))
@@ -485,7 +452,7 @@ def searchOrtho(args):
     print('Done! Check output in %s' % fcatOut)
 
 def main():
-    version = '0.0.23'
+    version = '0.0.24'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')

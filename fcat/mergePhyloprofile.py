@@ -19,19 +19,7 @@ import sys
 import os
 import argparse
 from pathlib import Path
-
-def checkFileExist(file, msg):
-    if not os.path.exists(os.path.abspath(file)):
-        sys.exit('%s not found! %s' % (file, msg))
-
-def readFile(file):
-    if os.path.exists(file):
-        with open(file, 'r') as f:
-            lines = f.read().splitlines()
-            f.close()
-            return(lines)
-    else:
-        sys.exit('%s not found' % file)
+import fcat.functions as fcatFn
 
 def mergePP(args):
     coreDir = os.path.abspath(args.coreDir)
@@ -42,53 +30,55 @@ def mergePP(args):
     else:
         if not coreSet in outDir:
             outDir = outDir + '/' +coreSet
-    checkFileExist(outDir,'')
+    fcatFn.checkFileExist(outDir,'')
     coreTaxaId = []
     for coreSpec in os.listdir('%s/blast_dir' % coreDir):
         coreTaxaId.append(coreSpec.split('@')[1])
+
     mode1out = []
-    mode2out = []
     mode3out = []
+    mode2out = []
     domainOut = []
+
     for query in os.listdir(outDir):
         if os.path.isdir(outDir + '/' + query):
             if '@' in query:
                 if not query.split('@')[1] in coreTaxaId:
                     if os.path.exists('%s/%s/phyloprofileOutput/%s_mode1.phyloprofile' % (outDir, query, query)):
-                        for line in readFile('%s/%s/phyloprofileOutput/%s_mode1.phyloprofile' % (outDir, query, query)):
-                            if not line in mode1out:
-                                mode1out.append(line)
+                        with open('%s/%s/phyloprofileOutput/%s_mode1.phyloprofile' % (outDir, query, query),'r') as fi:
+                            mode1out += fi.readlines()[1:]
                     if os.path.exists('%s/%s/phyloprofileOutput/%s_mode2.phyloprofile' % (outDir, query, query)):
-                        for line in readFile('%s/%s/phyloprofileOutput/%s_mode2.phyloprofile' % (outDir, query, query)):
-                            if not line in mode2out:
-                                mode2out.append(line)
+                        with open('%s/%s/phyloprofileOutput/%s_mode2.phyloprofile' % (outDir, query, query),'r') as fi:
+                            mode2out += fi.readlines()[1:]
                     if os.path.exists('%s/%s/phyloprofileOutput/%s_mode3.phyloprofile' % (outDir, query, query)):
-                        for line in readFile('%s/%s/phyloprofileOutput/%s_mode3.phyloprofile' % (outDir, query, query)):
-                            if not line in mode3out:
-                                mode3out.append(line)
+                        with open('%s/%s/phyloprofileOutput/%s_mode3.phyloprofile' % (outDir, query, query),'r') as fi:
+                            mode3out += fi.readlines()[1:]
                     if os.path.exists('%s/%s/phyloprofileOutput/%s.domains' % (outDir, query, query)):
-                        for line in readFile('%s/%s/phyloprofileOutput/%s.domains' % (outDir, query, query)):
-                            if not line in domainOut:
-                                domainOut.append(line)
+                        with open('%s/%s/phyloprofileOutput/%s.domains' % (outDir, query, query),'r') as fi:
+                            domainOut += fi.readlines()
+
     if len(mode1out) > 0:
-        mode1File = open('%s/%s_mode1.phyloprofile' % (outDir, coreSet), 'w')
-        mode1File.write('%s\n' % '\n'.join(mode1out))
-        mode1File.close()
+        mode1out = set(mode1out)
+        with open('%s/%s_mode1.phyloprofile' % (outDir, coreSet),'w') as fo:
+            fo.write('geneID\tncbiID\torthoID\tFAS\tAssessment\n')
+            fo.write(''.join(mode1out))
     if len(mode2out) > 0:
-        mode2File = open('%s/%s_mode2.phyloprofile' % (outDir, coreSet), 'w')
-        mode2File.write('%s\n' % '\n'.join(mode2out))
-        mode2File.close()
+        mode2out = set(mode2out)
+        with open('%s/%s_mode2.phyloprofile' % (outDir, coreSet),'w') as fo:
+            fo.write('geneID\tncbiID\torthoID\tFAS\tAssessment\n')
+            fo.write("".join(mode2out))
     if len(mode3out) > 0:
-        mode3File = open('%s/%s_mode3.phyloprofile' % (outDir, coreSet), 'w')
-        mode3File.write('%s\n' % '\n'.join(mode3out))
-        mode3File.close()
+        mode3out = set(mode3out)
+        with open('%s/%s_mode3.phyloprofile' % (outDir, coreSet),'w') as fo:
+            fo.write('geneID\tncbiID\torthoID\tFAS\tAssessment\n')
+            fo.write("".join(mode3out))
     if len(domainOut) > 0:
-        domainFile = open('%s/%s.domains' % (outDir, coreSet), 'w')
-        domainFile.write('%s\n' % '\n'.join(domainOut))
-        domainFile.close()
+        domainOut = set(domainOut)
+        with open('%s/%s.domains' % (outDir, coreSet),'w') as fo:
+            fo.write("".join(domainOut))
 
 def main():
-    version = '0.0.23'
+    version = '0.0.24'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     parser.add_argument('-d', '--coreDir', help='Path to core set directory, where folder core_orthologs can be found', action='store', default='', required=True)
     parser.add_argument('-c', '--coreSet', help='Name of core set, which is subfolder within coreDir/core_orthologs/ directory', action='store', default='', required=True)

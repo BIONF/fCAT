@@ -32,13 +32,7 @@ import statistics
 from scipy import stats
 from rpy2.robjects import FloatVector
 from rpy2.robjects.packages import importr
-
-def checkFileExist(file):
-    if not os.path.exists(os.path.abspath(file)):
-        sys.exit('%s not found' % file)
-
-def roundTo4(number):
-    return("%.4f" % round(number, 4))
+import fcat.functions as fcatFn
 
 def annoFAS(groupFa, annoDir, cpus, force):
     ### CAN BE IMPROVED!!!
@@ -112,7 +106,7 @@ def prepareJob(coreDir, coreSet, annoDir, blastDir, bidirectional, force, forceC
                                     refGenome = os.path.realpath(refGenome)
                                 else:
                                     sys.exit('%s not found!' % refGenome)
-                            checkFileExist(refGenome)
+                            fcatFn.checkFileExist(refGenome, '')
                             fasJobs.append([s.id, ref, groupID, groupFa, annoDirTmp, outDir, refGenome, bidirectional, force])
                             groupRefSpec[groupID].append(ref)
                         # ###### consensus approach
@@ -225,11 +219,11 @@ def getGroupPairs(scoreDict):
 #     for line in fasOut.stdout.decode().split('\n'):
 #         if '#\t' in line:
 #             tmp = line.split('\t')
-#             singleOut.write('%s\t%s\t%s\n' % (tmp[1].split('|')[1], roundTo4(float(tmp[3])), tmp[1]))
+#             singleOut.write('%s\t%s\t%s\n' % (tmp[1].split('|')[1], fcatFn.roundTo4(float(tmp[3])), tmp[1]))
 #             allFas.append(float(tmp[3]))
 #     # and mean to 1.scores
-#     groupOut.write('meanCons\t%s\n' % roundTo4(statistics.mean(allFas)))
-#     groupOut.write('medianCons\t%s\n' % roundTo4(statistics.median(allFas)))
+#     groupOut.write('meanCons\t%s\n' % fcatFn.roundTo4(statistics.mean(allFas)))
+#     groupOut.write('medianCons\t%s\n' % fcatFn.roundTo4(statistics.median(allFas)))
 #     singleOut.close()
 #     groupOut.close()
 
@@ -267,12 +261,12 @@ def calcCutoff(args):
                 rateUCL = list(limits.rx2[2])
                 UCL = 1/rateLCL[0]
                 LCL = 1/rateUCL[0]
-                groupOut.write('median\t%s\n' % roundTo4(statistics.median(groupPair)))
-                groupOut.write('mean\t%s\n' % roundTo4(statistics.mean(groupPair)))
-                groupOut.write('LCL\t%s\n' % roundTo4(LCL))
-                groupOut.write('UCL\t%s\n' % roundTo4(UCL))
+                groupOut.write('median\t%s\n' % fcatFn.roundTo4(statistics.median(groupPair)))
+                groupOut.write('mean\t%s\n' % fcatFn.roundTo4(statistics.mean(groupPair)))
+                groupOut.write('LCL\t%s\n' % fcatFn.roundTo4(LCL))
+                groupOut.write('UCL\t%s\n' % fcatFn.roundTo4(UCL))
         else:
-            singleOut.write('%s\t%s\t%s\n' % (key, roundTo4(statistics.mean(fasScores[key]['score'])), fasScores[key]['gene']))
+            singleOut.write('%s\t%s\t%s\n' % (key, fcatFn.roundTo4(statistics.mean(fasScores[key]['score'])), fasScores[key]['gene']))
     # get mean and stddev length for each group
     coreTaxa = []
     groupFa = '%s/core_orthologs/%s/%s/%s.fa' % (coreDir, coreSet, groupID, groupID)
@@ -292,17 +286,17 @@ def calcCutoff(args):
 def calcGroupCutoff(args):
     coreDir = os.path.abspath(args.coreDir)
     coreSet = args.coreSet
-    checkFileExist(coreDir + '/core_orthologs/' + coreSet)
+    fcatFn.checkFileExist(coreDir + '/core_orthologs/' + coreSet, '')
     annoDir = args.annoDir
     if annoDir == '':
         annoDir = '%s/weight_dir' % coreDir
     annoDir = os.path.abspath(annoDir)
-    checkFileExist(annoDir)
+    fcatFn.checkFileExist(annoDir, '')
     blastDir = args.blastDir
     if blastDir == '':
         blastDir = '%s/blast_dir' % coreDir
     blastDir = os.path.abspath(blastDir)
-    checkFileExist(blastDir)
+    fcatFn.checkFileExist(blastDir, '')
     cpus = args.cpus
     if cpus >= mp.cpu_count():
         cpus = mp.cpu_count()-1

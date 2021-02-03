@@ -19,19 +19,7 @@ import sys
 import os
 import argparse
 from ete3 import NCBITaxa
-
-def checkFileExist(file):
-    if not os.path.exists(os.path.abspath(file)):
-        sys.exit('%s not found' % file)
-
-def readFile(file):
-    if os.path.exists(file):
-        with open(file, 'r') as f:
-            lines = f.read().splitlines()
-            f.close()
-            return(lines)
-    else:
-        sys.exit('%s not found' % file)
+import fcat.functions as fcatFn
 
 def getNcbiName(taxonName):
     ncbi = NCBITaxa()
@@ -45,16 +33,16 @@ def getNcbiName(taxonName):
 def printRefTaxa(args):
     coreDir = os.path.abspath(args.coreDir)
     coreSet = args.coreSet
-    checkFileExist(coreDir + '/core_orthologs/' + coreSet)
+    fcatFn.checkFileExist(coreDir + '/core_orthologs/' + coreSet, '')
     taxaFile = '%s/core_orthologs/%s/done.txt' % (coreDir, coreSet)
-    checkFileExist(taxaFile)
+    fcatFn.checkFileExist(taxaFile, '')
     print('##### Taxa in the core sets, which can be used as reference species #####')
-    for taxon in readFile(taxaFile):
+    for taxon in fcatFn.readFile(taxaFile):
         print('%s\t%s' % (taxon, getNcbiName(taxon)))
     sys.exit()
 
 def main():
-    version = '0.0.23'
+    version = '0.0.24'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')

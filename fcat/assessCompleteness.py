@@ -23,32 +23,7 @@ import shutil
 import time
 import statistics
 import collections
-
-def checkFileExist(file, msg):
-    if not os.path.exists(os.path.abspath(file)):
-        sys.exit('%s not found! %s' % (file, msg))
-
-def readFile(file):
-    if os.path.exists(file):
-        with open(file, 'r') as f:
-            lines = f.read().splitlines()
-            f.close()
-            return(lines)
-    else:
-        sys.exit('%s not found' % file)
-
-def removeEmptyLine(file):
-    if os.path.exists(file):
-        nf = open(file+'.temp','w')
-        with open(file,'r+') as f:
-            for line in f:
-                if not len(line.strip()) == 0:
-                    nf.write(line)
-        nf.close()
-        os.replace(file+'.temp', file)
-
-def roundTo4(number):
-    return("%.4f" % round(number, 4))
+import fcat.functions as fcatFn
 
 def addToDict(dict, groupID, seqID, type, value, cutoff):
     if not groupID in dict:
@@ -72,7 +47,7 @@ def mode1(ppFile, missingGr, coreDir, coreSet, queryID):
     geneCat['dissimilar'] = []
     geneCat['missing'] = []
     # validate orthologs
-    for line in readFile(ppFile):
+    for line in fcatFn.readFile(ppFile):
         if len(line) > 0:
             if len(line.split('\t')) < 5:
                 flag = 1
@@ -82,7 +57,7 @@ def mode1(ppFile, missingGr, coreDir, coreSet, queryID):
                 scoreFile = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir/1.cutoff' % (coreDir, coreSet, groupID)
                 if os.path.exists(scoreFile):
                     meanGroup = 0
-                    for l in readFile(scoreFile):
+                    for l in fcatFn.readFile(scoreFile):
                         if l.split('\t')[0] == 'mean':
                             meanGroup = float(l.split('\t')[1])
                     if meanFas >= meanGroup:
@@ -123,10 +98,10 @@ def mode2(ppFile, missingGr, coreDir, coreSet, queryID, outDir):
     # get refspec for each group
     groupRefspec = {}
     refspecFile = '%s/%s/%s/last_refspec.txt' % (outDir, coreSet, queryID)
-    for g in readFile(refspecFile):
+    for g in fcatFn.readFile(refspecFile):
         groupRefspec[g.split('\t')[0]] = g.split('\t')[1]
     # validate orthologs
-    for line in readFile(ppFile):
+    for line in fcatFn.readFile(ppFile):
         if len(line) > 0:
             if len(line.split('\t')) < 5:
                 flag = 1
@@ -136,7 +111,7 @@ def mode2(ppFile, missingGr, coreDir, coreSet, queryID, outDir):
                 scoreFile = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir/2.cutoff' % (coreDir, coreSet, groupID)
                 if os.path.exists(scoreFile):
                     meanRefspec = 0
-                    for l in readFile(scoreFile):
+                    for l in fcatFn.readFile(scoreFile):
                         if l.split('\t')[0] == groupRefspec[groupID].strip():
                             meanRefspec = float(l.split('\t')[1].strip())
                     if meanFas >= meanRefspec:
@@ -175,7 +150,7 @@ def mode3(ppFile, missingGr, coreDir, coreSet, queryID):
     geneCat['dissimilar'] = []
     geneCat['missing'] = []
     # validate orthologs
-    for line in readFile(ppFile):
+    for line in fcatFn.readFile(ppFile):
         if len(line) > 0:
             if len(line.split('\t')) < 5:
                 flag = 1
@@ -186,7 +161,7 @@ def mode3(ppFile, missingGr, coreDir, coreSet, queryID):
                 if os.path.exists(scoreFile):
                     LCL = 0
                     UCL = 0
-                    for l in readFile(scoreFile):
+                    for l in fcatFn.readFile(scoreFile):
                         if l.split('\t')[0] == 'LCL':
                             LCL = float(l.split('\t')[1])
                         if l.split('\t')[0] == 'UCL':
@@ -228,7 +203,7 @@ def mode4(ppFile, missingGr, coreDir, coreSet, queryID):
     geneCat['dissimilar'] = []
     geneCat['missing'] = []
     # validate orthologs
-    for line in readFile(ppFile):
+    for line in fcatFn.readFile(ppFile):
         if len(line) > 0:
             if len(line.split('\t')) < 5:
                 flag = 1
@@ -240,7 +215,7 @@ def mode4(ppFile, missingGr, coreDir, coreSet, queryID):
                     if os.path.exists(scoreFile):
                         meanLen = 0
                         stdevLen = 0
-                        for l in readFile(scoreFile):
+                        for l in fcatFn.readFile(scoreFile):
                             if l.split('\t')[0] == 'meanLen':
                                 meanLen = float(l.split('\t')[1])
                             if l.split('\t')[0] == 'stdevLen':
@@ -249,20 +224,20 @@ def mode4(ppFile, missingGr, coreDir, coreSet, queryID):
                         if stdevLen > 0:
                             check = abs((length - meanLen) / (2 * stdevLen))
                             if check <= 1:
-                                assessment = addToDict(assessment, groupID, line.split('\t')[2], 'complete', length, '%s (sd=%s)' % (roundTo4(meanLen), roundTo4(stdevLen)))
+                                assessment = addToDict(assessment, groupID, line.split('\t')[2], 'complete', length, '%s (sd=%s)' % (fcatFn.roundTo4(meanLen), fcatFn.roundTo4(stdevLen)))
                                 # geneCat['similar'].append(line+'\t0')
                                 geneCat['similar'].append('\t'.join(line.split('\t')[0:-1])+'\t1')
                             else:
-                                assessment = addToDict(assessment, groupID, line.split('\t')[2], 'fragmented', length, '%s (sd=%s)' % (roundTo4(meanLen), roundTo4(stdevLen)))
+                                assessment = addToDict(assessment, groupID, line.split('\t')[2], 'fragmented', length, '%s (sd=%s)' % (fcatFn.roundTo4(meanLen), fcatFn.roundTo4(stdevLen)))
                                 # geneCat['dissimilar'].append(line+'\t1')
                                 geneCat['similar'].append('\t'.join(line.split('\t')[0:-1])+'\t0')
                         else:
                             if (length - meanLen) >= 0:
-                                assessment = addToDict(assessment, groupID, line.split('\t')[2], 'complete', length, '%s (sd=%s)' % (roundTo4(meanLen), roundTo4(stdevLen)))
+                                assessment = addToDict(assessment, groupID, line.split('\t')[2], 'complete', length, '%s (sd=%s)' % (fcatFn.roundTo4(meanLen), fcatFn.roundTo4(stdevLen)))
                                 # geneCat['similar'].append(line+'\t0')
                                 geneCat['similar'].append('\t'.join(line.split('\t')[0:-1])+'\t1')
                             else:
-                                assessment = addToDict(assessment, groupID, line.split('\t')[2], 'fragmented', length, '%s (sd=%s)' % (roundTo4(meanLen), roundTo4(stdevLen)))
+                                assessment = addToDict(assessment, groupID, line.split('\t')[2], 'fragmented', length, '%s (sd=%s)' % (fcatFn.roundTo4(meanLen), fcatFn.roundTo4(stdevLen)))
                                 # geneCat['dissimilar'].append(line+'\t1')
                                 geneCat['similar'].append('\t'.join(line.split('\t')[0:-1])+'\t0')
                     else:
@@ -290,7 +265,7 @@ def mode4(ppFile, missingGr, coreDir, coreSet, queryID):
 # def mode5(ppFile, coreDir, coreSet, queryID):
 #     noCutoff = []
 #     assessment = {}
-#     for line in readFile(ppFile):
+#     for line in fcatFn.readFile(ppFile):
 #         groupID = line.split('\t')[0]
 #         # if queryID in line.split('\t')[2]:
 #         if line.split('\t')[1] == 'ncbi'+str(queryID.split('@')[1]):
@@ -298,7 +273,7 @@ def mode4(ppFile, missingGr, coreDir, coreSet, queryID):
 #             scoreFile = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir/3.cutoff' % (coreDir, coreSet, groupID)
 #             if os.path.exists(scoreFile):
 #                 meanGroup = 0
-#                 for l in readFile(scoreFile):
+#                 for l in fcatFn.readFile(scoreFile):
 #                     if l.split('\t')[0] == 'meanCons':
 #                         meanGroup = float(l.split('\t')[1])
 #                 if meanFas >= meanGroup:
@@ -315,10 +290,10 @@ def mode4(ppFile, missingGr, coreDir, coreSet, queryID):
 #     # get refspec for each group
 #     groupRefspec = {}
 #     refspecFile = '%s/%s/%s/last_refspec.txt' % (outDir, coreSet, queryID)
-#     for g in readFile(refspecFile):
+#     for g in fcatFn.readFile(refspecFile):
 #         groupRefspec[g.split('\t')[0]] = g.split('\t')[1]
 #     # do assessment
-#     for line in readFile(ppFile):
+#     for line in fcatFn.readFile(ppFile):
 #         groupID = line.split('\t')[0]
 #         # if queryID in line.split('\t')[2]:
 #         if line.split('\t')[1] == 'ncbi'+str(queryID.split('@')[1]):
@@ -327,7 +302,7 @@ def mode4(ppFile, missingGr, coreDir, coreSet, queryID):
 #             scoreFile = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir/4.cutoff' % (coreDir, coreSet, groupID)
 #             if os.path.exists(scoreFile):
 #                 meanRefspec = 0
-#                 for l in readFile(scoreFile):
+#                 for l in fcatFn.readFile(scoreFile):
 #                     if l.split('\t')[0] == groupRefspec[groupID].strip():
 #                         meanRefspec = float(l.split('\t')[1].strip())
 #                 if meanFas >= meanRefspec:
@@ -348,10 +323,10 @@ def writeReport(assessment, outDir, coreDir, coreSet, queryID, mode):
     for group in assessment:
         fullFile.write('%s\n' % assessment[group])
     if os.path.exists(missing):
-        for m in readFile(missing):
+        for m in fcatFn.readFile(missing):
             fullFile.write(m + '\tmissing\n')
     if os.path.exists(ignored):
-        for i in readFile(ignored):
+        for i in fcatFn.readFile(ignored):
             fullFile.write(i + '\tignored\n')
     fullFile.close()
     # write summary report
@@ -361,10 +336,10 @@ def writeReport(assessment, outDir, coreDir, coreSet, queryID, mode):
     dup = [item for item, count in collections.Counter(groupID).items() if count > 1]
     coreGroups = os.listdir(coreDir + '/core_orthologs/' + coreSet)
     header = 'genomeID\tsimilar\tdissimilar\tduplicated\tmissing\tignored\ttotal'
-    stat = '%s\n%s\t%s\t%s\t%s\t%s\t%s\t%s\n' % (header, queryID, type.count('similar'), type.count('dissimilar'), len(dup), len(readFile(missing)), len(readFile(ignored)), len(coreGroups)-1)
+    stat = '%s\n%s\t%s\t%s\t%s\t%s\t%s\t%s\n' % (header, queryID, type.count('similar'), type.count('dissimilar'), len(dup), len(fcatFn.readFile(missing)), len(fcatFn.readFile(ignored)), len(coreGroups)-1)
     if mode == 4:
         header = 'genomeID\tcomplete\tfragmented\tduplicated\tmissing\tignored\ttotal'
-        stat = '%s\n%s\t%s\t%s\t%s\t%s\t%s\t%s\n' % (header, queryID, type.count('complete'), type.count('fragmented'), len(dup), len(readFile(missing)), len(readFile(ignored)), len(coreGroups)-1)
+        stat = '%s\n%s\t%s\t%s\t%s\t%s\t%s\t%s\n' % (header, queryID, type.count('complete'), type.count('fragmented'), len(dup), len(fcatFn.readFile(missing)), len(fcatFn.readFile(ignored)), len(coreGroups)-1)
     summaryFile.write(stat)
     summaryFile.close()
     return(stat)
@@ -400,7 +375,7 @@ def doAssessment(ppDir, coreDir, coreSet, queryID, outDir, mode):
     # print full report
     stat = writeReport(assessment, outDir, coreDir, coreSet, queryID, mode)
     # remove empty lines in pp file
-    removeEmptyLine(ppFile)
+    fcatFn.removeDupEmpty(ppFile)
     return(noCutoff, stat, flag)
 
 def mergeReports(args):
@@ -416,11 +391,11 @@ def mergeReports(args):
     for m in modes:
         availableMode.append('%s_cat\t%s_value\t%s_cutoff\t%s_delta' % (m,m,m,m))
         if os.path.exists('%s/%s/%s/%s/summary.txt' % (outDir, coreSet, queryID, m)):
-            for line in readFile('%s/%s/%s/%s/summary.txt' % (outDir, coreSet, queryID, m)):
+            for line in fcatFn.readFile('%s/%s/%s/%s/summary.txt' % (outDir, coreSet, queryID, m)):
                 if not line.split('\t')[0] == 'genomeID':
                     mergedStat.write('%s\t%s\n' % (m, line))
         if os.path.exists('%s/%s/%s/%s/full.txt' % (outDir, coreSet, queryID, m)):
-            for line in readFile('%s/%s/%s/%s/full.txt' % (outDir, coreSet, queryID, m)):
+            for line in fcatFn.readFile('%s/%s/%s/%s/full.txt' % (outDir, coreSet, queryID, m)):
                 tmp = line.split('\t') # 1488235at2759	dissimilar	1488235at2759|TRINE@6336@1|T07_14825.1|1	0.5566	0.7034
                 if not tmp[0] == 'GroupID':
                     orthoID = 'NA'
@@ -455,14 +430,14 @@ def mergeReports(args):
 def assessCompteness(args):
     coreDir = os.path.abspath(args.coreDir)
     coreSet = args.coreSet
-    checkFileExist(coreDir + '/core_orthologs/' + coreSet, '')
+    fcatFn.checkFileExist(coreDir + '/core_orthologs/' + coreSet, '')
     mode = args.mode
     queryID = args.queryID
     outDir = os.path.abspath(args.outDir)
     if not 'fcatOutput' in outDir:
         outDir = outDir + '/fcatOutput'
     ppDir = '%s/%s/%s/phyloprofileOutput' % (outDir, coreSet, queryID)
-    checkFileExist(os.path.abspath(ppDir), 'No phylogenetic profile folder found!')
+    fcatFn.checkFileExist(os.path.abspath(ppDir), 'No phylogenetic profile folder found!')
     mode = args.mode
     force = args.force
     # do assessment and print report
@@ -486,7 +461,7 @@ def assessCompteness(args):
     return(flag)
 
 def main():
-    version = '0.0.23'
+    version = '0.0.24'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')

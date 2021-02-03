@@ -27,15 +27,12 @@ import fcat.searchOrtho as fcatO
 import fcat.assessCompleteness as fcatR
 import fcat.createPhyloprofile as fcatP
 import fcat.mergePhyloprofile as fcatM
-
-def checkFileExist(file):
-    if not os.path.exists(os.path.abspath(file)):
-        sys.exit('%s not found' % file)
+import fcat.functions as fcatFn
 
 def checkRefspec(coreDir, coreSet, refspecList):
     taxaFile = '%s/core_orthologs/%s/done.txt' % (coreDir, coreSet)
-    checkFileExist(taxaFile)
-    allTaxa = fcatO.readFile(taxaFile)
+    fcatFn.checkFileExist(taxaFile, '')
+    allTaxa = fcatFn.readFile(taxaFile)
     invalid = []
     for refspec in refspecList:
         if not refspec in allTaxa:
@@ -90,7 +87,7 @@ def fcat(args):
         fcatM.mergePP(args)
 
 def main():
-    version = '0.0.23'
+    version = '0.0.24'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
