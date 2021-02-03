@@ -42,7 +42,7 @@ def printRefTaxa(args):
     sys.exit()
 
 def main():
-    version = '0.0.24'
+    version = '0.0.25'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
