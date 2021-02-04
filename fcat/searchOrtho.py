@@ -3,7 +3,7 @@
 #######################################################################
 #  Copyright (C) 2020 Vinh Tran
 #
-#  Calculate FAS cutoff for each core ortholog group of the core set
+#  Search orthologs for each core gene in the query species
 #
 #  This script is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -452,7 +452,7 @@ def searchOrtho(args):
     print('Done! Check output in %s' % fcatOut)
 
 def main():
-    version = '0.0.25'
+    version = '0.0.26'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')

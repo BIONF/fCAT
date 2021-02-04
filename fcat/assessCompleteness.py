@@ -3,7 +3,7 @@
 #######################################################################
 #  Copyright (C) 2020 Vinh Tran
 #
-#  Calculate FAS cutoff for each core ortholog group of the core set
+#  Assign completeness status for each core gene in the core set
 #
 #  This script is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -461,7 +461,7 @@ def assessCompteness(args):
     return(flag)
 
 def main():
-    version = '0.0.25'
+    version = '0.0.26'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
