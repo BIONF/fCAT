@@ -41,7 +41,7 @@ def removeDupEmpty(file):
 
 
 def roundTo4(number):
-    return("%.4f" % round(number, 4))
+    return("%.4f" % round(float(number), 4))
 
 def deleteFolder(folder):
     if os.path.exists(folder):

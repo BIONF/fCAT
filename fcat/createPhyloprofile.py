@@ -135,12 +135,12 @@ def createProfile1(coreDir, outDir, coreSet, queryID, force, groupRefspec):
                         # not include core taxon that have the same taxonomy ID as query
                         if queryID.split('@')[1] == groupRefspec[missingGr].split('@')[1]:
                             if not tax.split('\t')[0] == groupRefspec[missingGr]:
-                                ppCore = '%s\t%s\t%s|1\t%s\n' % (missingGr, 'ncbi' + str(tax.split('\t')[0].split('@')[1]), tax.split('\t')[2], fcatFn.roundTo4(tax.split('\t')[1]))
+                                ppCore = '%s\t%s\t%s|1\t%s\n' % (missingGr, 'ncbi' + str(tax.split('\t')[0].split('@')[1]), tax.split('\t')[2], fcatFn.roundTo4(float(tax.split('\t')[1])))
                                 if ppCore not in lines_seen: # not a duplicate
                                     finalPhyloprofile.write(ppCore)
                                     lines_seen.add(ppCore)
                         else:
-                            ppCore = '%s\t%s\t%s|1\t%s\n' % (missingGr, 'ncbi' + str(tax.split('\t')[0].split('@')[1]), tax.split('\t')[2], fcatFn.roundTo4(tax.split('\t')[1]))
+                            ppCore = '%s\t%s\t%s|1\t%s\n' % (missingGr, 'ncbi' + str(tax.split('\t')[0].split('@')[1]), tax.split('\t')[2], fcatFn.roundTo4(float(tax.split('\t')[1])))
                             if ppCore not in lines_seen: # not a duplicate
                                 finalPhyloprofile.write(ppCore)
                                 lines_seen.add(ppCore)
@@ -323,7 +323,7 @@ def createPhyloProfile(args):
                 shutil.rmtree('%s/fdogOutput/' % (fcatOut))
 
 def main():
-    version = '0.0.26'
+    version = '0.0.27'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')

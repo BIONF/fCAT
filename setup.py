@@ -26,7 +26,7 @@ with open("README.md", "r") as input:
 
 setup(
     name="fcat",
-    version="0.0.26",
+    version="0.0.27",
     python_requires='>=3.7.0',
     description="Python package for fCAT, a feature-aware completeness assessment tool",
     long_description=long_description,
