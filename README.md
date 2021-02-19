@@ -2,6 +2,7 @@
 [![PyPI version](https://badge.fury.io/py/fcat.svg)](https://pypi.org/project/fcat/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Build Status](https://travis-ci.com/BIONF/fCAT.svg?branch=main)](https://travis-ci.com/BIONF/fCAT)
+![Github Build](https://github.com/BIONF/fCAT/workflows/build/badge.svg)
 
 Python package for fCAT, a **f**eature-aware **C**ompleteness **A**ssessment **T**ool
 
