@@ -51,7 +51,6 @@ def main():
 
     args = parser.parse_args()
     printRefTaxa(args)
-    ende = time.time()
 
 if __name__ == '__main__':
     main()
