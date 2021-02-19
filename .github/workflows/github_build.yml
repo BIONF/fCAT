@@ -26,7 +26,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        python -m pip install flake8 pytest
+        python -m pip install flake8 pytest wheel
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Lint with flake8
       run: |
@@ -38,8 +38,8 @@ jobs:
       run: |
         pwd
         pip install .
-        fact -h
-        fact.report -h
+        fcat -h
+        fcat.report -h
     - name: Deploy
       if: startsWith(github.event.ref, 'refs/tags')
       uses: casperdcl/deploy-pypi@v2
