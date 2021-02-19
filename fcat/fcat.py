@@ -20,6 +20,7 @@ import sys
 import os
 import argparse
 import time
+from pathlib import Path
 import multiprocessing as mp
 import shutil
 # import fcat.calcCutoff as fcatC
