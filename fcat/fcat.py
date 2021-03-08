@@ -44,18 +44,6 @@ def checkRefspec(coreDir, coreSet, refspecList):
         sys.exit()
 
 def fcat(args):
-    # calculate group specific cutoffs
-    # print('##### Calculating group specific cutoffs...')
-    # fcatC.calcGroupCutoff(args)
-
-    # check for valid refspec
-    checkRefspec(args.coreDir, args.coreSet, str(args.refspecList).split(","))
-
-    # search for orthologs and create phylognetic profile files
-    print('##### Searching for orthologs...')
-    fcatO.searchOrtho(args)
-
-    # get queryID
     outDir = args.outDir
     if outDir == '':
         outDir = os.getcwd()
@@ -68,11 +56,28 @@ def fcat(args):
     cpus = args.cpus
     if cpus >= mp.cpu_count():
         cpus = mp.cpu_count()-1
+
+    # get queryID
+    if args.annoQuery == '':
+        print('Annotation for %s not given! It might take a while for annotating...' % args.querySpecies)
     (doAnno, queryTaxId) = fcatO.checkQueryAnno(args.annoQuery, annoDir, args.taxid, args.querySpecies)
     args.queryID = fcatO.parseQueryFa(args.coreSet, os.path.abspath(args.querySpecies), args.annoQuery, str(args.taxid), outDir, doAnno, annoDir, cpus)
+    print('Query ID used by fCAT and fDOG: %s' % args.queryID)
     if doAnno == False:
         if os.path.exists( '%s/query_%s.json' % (annoDir, queryTaxId)):
             os.remove('%s/query_%s.json' % (annoDir, queryTaxId))
+
+    # calculate group specific cutoffs
+    # print('##### Calculating group specific cutoffs...')
+    # fcatC.calcGroupCutoff(args)
+
+    # check for valid refspec
+    checkRefspec(args.coreDir, args.coreSet, str(args.refspecList).split(","))
+
+    # search for orthologs and create phylognetic profile files
+    print('##### Searching for orthologs...')
+    fcatO.searchOrtho(args)
+
 
     # create phyloprofile files
     print('##### Creating phylogenetic profiles....')
@@ -88,7 +93,7 @@ def fcat(args):
         fcatM.mergePP(args)
 
 def main():
-    version = '0.0.28'
+    version = '0.0.29'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')

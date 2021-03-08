@@ -74,9 +74,9 @@ def parseQueryFa(coreSet, query, annoQuery, taxid, outDir, doAnno, annoDir, cpus
             addTaxon = 'fdog.addTaxon -f %s -i %s -o %s --replace' % (query, taxid, outDir)
             if doAnno == False:
                 addTaxon = addTaxon + ' --noAnno'
-            else:
-                if annoQuery == '':
-                    print('Annotation for %s not given! It will take a while for annotating...' % queryID)
+            # else:
+            #     if annoQuery == '':
+            #         print('Annotation for %s not given! It will take a while for annotating...' % queryID)
             try:
                 addTaxonOut = subprocess.run([addTaxon], shell=True, capture_output=True, check=True)
             except:
@@ -85,7 +85,7 @@ def parseQueryFa(coreSet, query, annoQuery, taxid, outDir, doAnno, annoDir, cpus
             for line in addTaxonOut.stdout.decode().split('\n'):
                 if "Species name" in line:
                     queryID = line.split('\t')[1]
-                    print('Query ID used by fCAT and fDOG: %s' % queryID)
+                    # print('Query ID used by fCAT and fDOG: %s' % queryID)
             if len(queryID) == 0:
                 sys.exit('Cannot identidy queryID!')
     else:
@@ -97,11 +97,18 @@ def parseQueryFa(coreSet, query, annoQuery, taxid, outDir, doAnno, annoDir, cpus
         checkedFile.write(now.strftime("%Y-%m-%d %H:%M:%S"))
         checkedFile.close()
         if doAnno:
-            annoFAS = 'annoFAS -i %s -o %s --cpus %s > /dev/null 2>&1' % (query, annoDir, cpus)
+            annoFAS = 'annoFAS -i %s -o %s --cpus %s > /dev/null 2>&1' % (query, outDir, cpus)
             try:
                 subprocess.run([annoFAS], shell=True, check=True)
             except:
                 print('\033[91mProblem occurred while running annoFAS for query protein set\033[0m\n%s' % annoFAS)
+    # make link to new created annotation file (if needed)
+    if doAnno:
+        try:
+            os.symlink('%s/weight_dir/%s.json' % (outDir, queryID), '%s/%s.json' % (annoDir, queryID))
+        except FileExistsError:
+            os.remove( '%s/%s.json' % (annoDir, queryID))
+            os.symlink('%s/weight_dir/%s.json' % (outDir, queryID),  '%s/%s.json' % (annoDir, queryID))
     return(queryID)
 
 def checkRefspec(refspecList, groupFa):
@@ -452,7 +459,7 @@ def searchOrtho(args):
     print('Done! Check output in %s' % fcatOut)
 
 def main():
-    version = '0.0.28'
+    version = '0.0.29'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
