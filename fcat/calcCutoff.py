@@ -36,15 +36,15 @@ import fcat.functions as fcatFn
 
 def annoFAS(groupFa, annoDir, cpus, force):
     ### CAN BE IMPROVED!!!
-    ### by modify seq IDs in groupFa, then use extract option of annoFAS
+    ### by modify seq IDs in groupFa, then use extract option of fas.doAnno
     ### and replace mod IDs by original IDs again in the annotaion json file
-    annoFAS = 'annoFAS -i %s -o %s --cpus %s > /dev/null 2>&1' % (groupFa, annoDir, cpus)
+    annoFAS = 'fas.doAnno -i %s -o %s --cpus %s > /dev/null 2>&1' % (groupFa, annoDir, cpus)
     if force:
         annoFAS = annoFAS + ' --force'
     try:
         subprocess.run([annoFAS], shell=True, check=True)
     except:
-        print('\033[91mProblem occurred while running annoFAS\033[0m\n%s' % annoFAS)
+        print('\033[91mProblem occurred while running fas.doAnno\033[0m\n%s' % annoFAS)
 
 # def getConsensus(alignmentFile, cov):
 #     alignment = AlignIO.read(alignmentFile, 'fasta')
@@ -137,14 +137,14 @@ def calcFAS(args):
             flag = 1
     if flag == 1:
         # calculate fas scores for each sequence vs all
-        fasCmd = 'calcFAS -s \"%s\" -q \"%s\" --query_id \"%s\" -a %s -o %s -n %s --domain -r %s -t 10' % (groupFa, groupFa, queryID, annoDir, outputDir, refSpec, ref)
+        fasCmd = 'fas.run -s \"%s\" -q \"%s\" --query_id \"%s\" -a %s -o %s -n %s --domain -r %s -t 10' % (groupFa, groupFa, queryID, annoDir, outputDir, refSpec, ref)
         if bidirectional:
             fasCmd = fasCmd + ' --bidirectional'
         fasCmd = fasCmd + ' > /dev/null 2>&1'
         try:
             subprocess.run([fasCmd], shell=True, check=True)
         except:
-            print('\033[91mProblem occurred while running calcFAS\033[0m\n%s' % fasCmd)
+            print('\033[91mProblem occurred while running fas.run\033[0m\n%s' % fasCmd)
 
 def parseFasOut(fasOutDir, refSpecList):
     fasScores = {}
@@ -152,10 +152,10 @@ def parseFasOut(fasOutDir, refSpecList):
     for refSpec in refSpecList:
         fasOut = fasOutDir + '/' + refSpec + '.tsv'
         if not os.path.exists(fasOut):
-            sys.exit('%s not found! Probably calcFAS could not run correctly. Please check again!' % fasOut)
+            sys.exit('%s not found! Probably fas.run could not run correctly. Please check again!' % fasOut)
         else:
             if os.stat(fasOut).st_size == 0:
-                sys.exit('%s is empty! Probably calcFAS could not run correctly. Please check again!' % fasOut)
+                sys.exit('%s is empty! Probably fas.run could not run correctly. Please check again!' % fasOut)
         if not refSpec in fasScores:
             fasScores[refSpec] = {}
             fasScores[refSpec]['score'] = []
@@ -203,11 +203,11 @@ def getGroupPairs(scoreDict):
 # def parseConsFas(args):
 #     (coreDir, coreSet, groupID, groupFa, consensusFa, annoDirTmp, outDir, force) = args
 #     # calculate fas scores for each sequence (seed) vs consensus (query)
-#     fasCmd = 'calcFAS -s \"%s\" -q \"%s\" -a %s -o %s -t 10 --raw --tsv --domain' % (groupFa, consensusFa, annoDirTmp, outDir)
+#     fasCmd = 'fas.run -s \"%s\" -q \"%s\" -a %s -o %s -t 10 --raw --tsv --domain' % (groupFa, consensusFa, annoDirTmp, outDir)
 #     try:
 #         fasOut = subprocess.run([fasCmd], shell=True, capture_output=True, check=True)
 #     except:
-#         print('\033[91mProblem occurred while running calcFAS\033[0m\n%s' % fasCmd)
+#         print('\033[91mProblem occurred while running fas.run\033[0m\n%s' % fasCmd)
 #     cutoffDir = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir' % (coreDir, coreSet, groupID)
 #     Path(cutoffDir).mkdir(parents=True, exist_ok=True)
 #     singleOut = open(cutoffDir + '/4.cutoff', 'w')
@@ -335,8 +335,8 @@ def calcGroupCutoff(args):
     pool.join()
 
 def main():
-    version = '0.0.5'
-    parser = argparse.ArgumentParser(description='You are running fcat.cutoff version ' + str(version) + '.')
+    version = '0.0.30'
+    parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
     required.add_argument('-d', '--coreDir', help='Path to core set directory, where folder core_orthologs can be found', action='store', default='', required=True)

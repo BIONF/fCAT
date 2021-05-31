@@ -97,7 +97,7 @@ def parseQueryFa(coreSet, query, annoQuery, taxid, outDir, doAnno, annoDir, cpus
         checkedFile.write(now.strftime("%Y-%m-%d %H:%M:%S"))
         checkedFile.close()
         if doAnno:
-            annoFAS = 'annoFAS -i %s -o %s --cpus %s > /dev/null 2>&1' % (query, outDir, cpus)
+            annoFAS = 'fas.doAnno -i %s -o %s --cpus %s > /dev/null 2>&1' % (query, outDir, cpus)
             try:
                 subprocess.run([annoFAS], shell=True, check=True)
             except:
@@ -195,12 +195,12 @@ def calcFAS(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
                         else:
                             missing.append(groupID)
                 mergedFaFile.close()
-                # calculate fas scores for merged extended.fa using fdogFAS
-                fdogFAS = 'fdogFAS -i %s -w %s --cores %s' % (mergedFa, annoDir, cpus)
+                # calculate fas scores for merged extended.fa using fas.runFdogFas
+                fdogFAS = 'fas.runFdogFas -i %s -w %s --cores %s --redo_anno' % (mergedFa, annoDir, cpus)
                 try:
                     subprocess.run([fdogFAS], shell=True, check=True)
                 except:
-                    print('\033[91mProblem occurred while running fdogFAS for \'%s\'\033[0m\n%s' % (mergedFa, fdogFAS))
+                    print('\033[91mProblem occurred while running fas.runFdogFas for \'%s\'\033[0m\n%s' % (mergedFa, fdogFAS))
     return(missing)
 
 def calcFASall(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
@@ -235,12 +235,12 @@ def calcFASall(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
                         # delete single fdog out
                         # shutil.rmtree('%s/%s' % (refDir, groupID))
         mergedFaFile.close()
-        # calculate fas scores for merged _all.extended.fa using fdogFAS
-        fdogFAS = 'fdogFAS -i %s -w %s --cores %s' % (mergedFa, annoDir, cpus)
+        # calculate fas scores for merged _all.extended.fa using fas.runFdogFas
+        fdogFAS = 'fas.runFdogFas -i %s -w %s --cores %s --redo_anno' % (mergedFa, annoDir, cpus)
         try:
             subprocess.run([fdogFAS], shell=True, check=True)
         except:
-            print('\033[91mProblem occurred while running fdogFAS for \'%s\'\033[0m\n%s' % (mergedFa, fdogFAS))
+            print('\033[91mProblem occurred while running fas.runFdogFas for \'%s\'\033[0m\n%s' % (mergedFa, fdogFAS))
 
 # def calcFAScmd(args):
 #     (seed, seedIDs, query, anno, out, name) = args
@@ -314,7 +314,7 @@ def calcFASall(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
 #             groupFaFile.close()
 #             # get annotation for orthologs
 #             if not os.path.exists('%s/%s.json' % (annoDirTmp, refSpec)):
-#                 extractAnnoCmd = 'annoFAS -i %s -o %s -e -a %s/%s.json -n %s > /dev/null 2>&1' % (groupFa, annoDirTmp, annoDir, queryID, refSpec)
+#                 extractAnnoCmd = 'fas.doAnno -i %s -o %s -e -a %s/%s.json -n %s > /dev/null 2>&1' % (groupFa, annoDirTmp, annoDir, queryID, refSpec)
 #                 try:
 #                     subprocess.run([extractAnnoCmd], shell=True, check=True)
 #                 except:
@@ -459,7 +459,7 @@ def searchOrtho(args):
     print('Done! Check output in %s' % fcatOut)
 
 def main():
-    version = '0.0.29'
+    version = '0.0.30'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
