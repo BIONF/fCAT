@@ -136,8 +136,9 @@ def calcFAS(args):
             os.remove('%s/%s.tsv' % (outputDir, refSpec))
             flag = 1
     if flag == 1:
+        annoToolsFcat = getAnnoToolFile()
         # calculate fas scores for each sequence vs all
-        fasCmd = 'fas.run -s \"%s\" -q \"%s\" --query_id \"%s\" -a %s -o %s -n %s --domain -r %s -t 10' % (groupFa, groupFa, queryID, annoDir, outputDir, refSpec, ref)
+        fasCmd = 'fas.run -s \"%s\" -q \"%s\" --query_id \"%s\" -a %s -o %s -n %s --domain -r %s -t 10 -d %s' % (groupFa, groupFa, queryID, annoDir, outputDir, refSpec, ref, annoToolsFcat)
         if bidirectional:
             fasCmd = fasCmd + ' --bidirectional'
         fasCmd = fasCmd + ' > /dev/null 2>&1'

@@ -1,0 +1,7 @@
+#linearized
+Pfam
+SMART
+#normal
+TMHMM
+SignalP
+#checked

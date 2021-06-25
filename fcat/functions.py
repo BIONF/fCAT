@@ -49,3 +49,8 @@ def deleteFolder(folder):
             os.remove(folder)
         else:
             shutil.rmtree(folder)
+
+def getAnnoToolFile():
+    fcatPath = os.path.realpath(__file__).replace('/function.py','')
+    annoToolsFile = fcatPath + '/annoToolsFcat.txt'
+    return(annoToolsFile)

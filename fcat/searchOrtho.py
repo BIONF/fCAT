@@ -177,6 +177,7 @@ def outputMode(outDir, coreSet, queryID, force, approach):
     return(mode, phyloprofileDir)
 
 def calcFAS(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
+    annoToolsFcat = getAnnoToolFile()
     missing = []
     fdogOutDir = '%s/fcatOutput/%s/%s/fdogOutput' % (outDir, coreSet, queryID)
     out = os.listdir(fdogOutDir)
@@ -197,7 +198,7 @@ def calcFAS(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
                             missing.append(groupID)
                 mergedFaFile.close()
                 # calculate fas scores for merged extended.fa using fas.runFdogFas
-                fdogFAS = 'fas.runFdogFas -i %s -w %s --cores %s --redo_anno' % (mergedFa, annoDir, cpus)
+                fdogFAS = 'fas.runFdogFas -i %s -w %s --cores %s --redo_anno --featuretypes %s' % (mergedFa, annoDir, cpus, annoToolsFcat)
                 try:
                     subprocess.run([fdogFAS], shell=True, check=True)
                 except:
@@ -205,6 +206,7 @@ def calcFAS(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
     return(missing)
 
 def calcFASall(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
+    annoToolsFcat = getAnnoToolFile()
     fdogOutDir = '%s/fcatOutput/%s/%s/fdogOutput' % (outDir, coreSet, queryID)
     mergedFa = '%s/%s_all.extended.fa' % (fdogOutDir, queryID)
     count = {}
@@ -237,7 +239,7 @@ def calcFASall(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
                         # shutil.rmtree('%s/%s' % (refDir, groupID))
         mergedFaFile.close()
         # calculate fas scores for merged _all.extended.fa using fas.runFdogFas
-        fdogFAS = 'fas.runFdogFas -i %s -w %s --cores %s --redo_anno' % (mergedFa, annoDir, cpus)
+        fdogFAS = 'fas.runFdogFas -i %s -w %s --cores %s --redo_anno --featuretypes %s' % (mergedFa, annoDir, cpus, annoToolsFcat)
         try:
             subprocess.run([fdogFAS], shell=True, check=True)
         except:
