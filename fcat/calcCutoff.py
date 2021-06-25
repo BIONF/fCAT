@@ -337,7 +337,7 @@ def calcGroupCutoff(args):
     pool.join()
 
 def main():
-    version = '0.0.33'
+    version = '0.0.34'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
