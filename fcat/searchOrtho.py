@@ -177,7 +177,7 @@ def outputMode(outDir, coreSet, queryID, force, approach):
     return(mode, phyloprofileDir)
 
 def calcFAS(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
-    annoToolsFcat = getAnnoToolFile()
+    annoToolsFcat = fcatFn.getAnnoToolFile()
     missing = []
     fdogOutDir = '%s/fcatOutput/%s/%s/fdogOutput' % (outDir, coreSet, queryID)
     out = os.listdir(fdogOutDir)
@@ -206,7 +206,7 @@ def calcFAS(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
     return(missing)
 
 def calcFASall(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
-    annoToolsFcat = getAnnoToolFile()
+    annoToolsFcat = fcatFn.getAnnoToolFile()
     fdogOutDir = '%s/fcatOutput/%s/%s/fdogOutput' % (outDir, coreSet, queryID)
     mergedFa = '%s/%s_all.extended.fa' % (fdogOutDir, queryID)
     count = {}
@@ -462,7 +462,7 @@ def searchOrtho(args):
     print('Done! Check output in %s' % fcatOut)
 
 def main():
-    version = '0.0.31'
+    version = '0.0.32'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')

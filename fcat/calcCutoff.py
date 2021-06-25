@@ -136,7 +136,7 @@ def calcFAS(args):
             os.remove('%s/%s.tsv' % (outputDir, refSpec))
             flag = 1
     if flag == 1:
-        annoToolsFcat = getAnnoToolFile()
+        annoToolsFcat = fcatFn.getAnnoToolFile()
         # calculate fas scores for each sequence vs all
         fasCmd = 'fas.run -s \"%s\" -q \"%s\" --query_id \"%s\" -a %s -o %s -n %s --domain -r %s -t 10 -d %s' % (groupFa, groupFa, queryID, annoDir, outputDir, refSpec, ref, annoToolsFcat)
         if bidirectional:
@@ -336,7 +336,7 @@ def calcGroupCutoff(args):
     pool.join()
 
 def main():
-    version = '0.0.31'
+    version = '0.0.32'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
