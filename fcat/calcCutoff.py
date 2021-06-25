@@ -38,9 +38,10 @@ def annoFAS(groupFa, annoDir, cpus, force):
     ### CAN BE IMPROVED!!!
     ### by modify seq IDs in groupFa, then use extract option of fas.doAnno
     ### and replace mod IDs by original IDs again in the annotaion json file
-    annoFAS = 'fas.doAnno -i %s -o %s --cpus %s > /dev/null 2>&1' % (groupFa, annoDir, cpus)
+    annoFAS = 'fas.doAnno -i %s -o %s --cpus %s --annoToolFile %s' % (groupFa, annoDir, cpus, fcatFn.getAnnoToolFile())
     if force:
         annoFAS = annoFAS + ' --force'
+    annoFAS = annoFAS + ' > /dev/null 2>&1'
     try:
         subprocess.run([annoFAS], shell=True, check=True)
     except:
