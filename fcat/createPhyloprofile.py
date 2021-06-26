@@ -224,11 +224,16 @@ def createProfile23(coreDir, outDir, coreSet, queryID, force):
 
 def getDomain(args):
     (jsonFile, groupID, seedIDmod, orthoID, orthoIDmod) = args
+    # tool list
+    toolList = []
+    for line in fcatFn.readFile(fcatFn.getAnnoToolFile()):
+        if not '#' in line:
+            toolList.append(line.strip())
     proteome = fasInput.read_json(jsonFile)["feature"]
     out = []
     if orthoID in proteome:
         for tool in proteome[orthoID]:
-            if not tool == 'length':
+            if tool in toolList:
                 for feature in proteome[orthoID][tool]:
                     for instance in proteome[orthoID][tool][feature]["instance"]:
                         out.append(groupID + "#" + seedIDmod + "\t" + orthoIDmod + "\t" + str(proteome[orthoID]["length"]) +
@@ -323,7 +328,7 @@ def createPhyloProfile(args):
                 shutil.rmtree('%s/fdogOutput/' % (fcatOut))
 
 def main():
-    version = '0.0.34'
+    version = '0.0.35'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')

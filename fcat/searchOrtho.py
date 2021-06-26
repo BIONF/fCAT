@@ -372,6 +372,7 @@ def searchOrtho(args):
         outDir = os.getcwd()
     else:
         Path(outDir).mkdir(parents=True, exist_ok=True)
+    outDir = os.path.abspath(outDir)
     blastDir = args.blastDir
     if blastDir == '':
         blastDir = '%s/blast_dir' % coreDir
@@ -462,7 +463,7 @@ def searchOrtho(args):
     print('Done! Check output in %s' % fcatOut)
 
 def main():
-    version = '0.0.34'
+    version = '0.0.35'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
