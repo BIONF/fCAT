@@ -292,7 +292,7 @@ def calcGroupCutoff(args):
     fcatFn.checkFileExist(coreDir + '/core_orthologs/' + coreSet, '')
     annoDir = args.annoDir
     if annoDir == '':
-        annoDir = '%s/fcatOutput/%s/weight_dir' % (outDir, args.coreSet)
+        annoDir = '%s/fcatOutput/%s/weight_dir' % (args.outDir, args.coreSet)
         Path(annoDir).mkdir(parents=True, exist_ok=True)
         # annoDir = '%s/weight_dir' % coreDir
     annoDir = os.path.abspath(annoDir)
@@ -347,7 +347,7 @@ def calcGroupCutoff(args):
     pool.join()
 
 def main():
-    version = '0.0.36'
+    version = '0.0.37'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
