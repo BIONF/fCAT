@@ -228,7 +228,7 @@ def getDomain(args):
     toolList = []
     for line in fcatFn.readFile(fcatFn.getAnnoToolFile()):
         if not '#' in line:
-            toolList.append(line.strip())
+            toolList.append(line.strip().lower())
     proteome = fasInput.read_json(jsonFile)["feature"]
     out = []
     if orthoID in proteome:
@@ -257,7 +257,8 @@ def createDomainFile(coreDir, outDir, coreSet, queryID, refspecFile, ppFile, cpu
                 orthoID = line.split('\t')[2].split('|')[2]
                 taxID = line.split('\t')[2].split('|')[1]
                 if taxID == queryID:
-                    jsonFile = '%s/weight_dir/%s.json' % (coreDir, queryID)
+                    # jsonFile = '%s/weight_dir/%s.json' % (coreDir, queryID)
+                    jsonFile = '%s/fcatOutput/%s/weight_dir/%s.json' % (outDir, coreSet, queryID)
                     domainJobs.append((jsonFile, groupID, line.split('\t')[2], orthoID, line.split('\t')[2]))
                 else:
                     jsonFile = '%s/core_orthologs/%s/%s/fas_dir/annotation_dir/%s.json' % (coreDir, coreSet, groupID, groupID)
@@ -328,7 +329,7 @@ def createPhyloProfile(args):
                 shutil.rmtree('%s/fdogOutput/' % (fcatOut))
 
 def main():
-    version = '0.0.35'
+    version = '0.0.36'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')

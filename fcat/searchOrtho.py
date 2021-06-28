@@ -17,6 +17,7 @@
 
 import sys
 import os
+import glob
 import argparse
 from pathlib import Path
 from Bio import SeqIO
@@ -380,9 +381,18 @@ def searchOrtho(args):
     fcatFn.checkFileExist(blastDir, 'Please set path to blastDB using --blastDir option.')
     annoDir = args.annoDir
     if annoDir == '':
-        annoDir = '%s/weight_dir' % coreDir
+        annoDir = '%s/fcatOutput/%s/weight_dir' % (outDir, args.coreSet)
+        Path(annoDir).mkdir(parents=True, exist_ok=True)
+        # annoDir = '%s/weight_dir' % coreDir
     annoDir = os.path.abspath(annoDir)
     fcatFn.checkFileExist(annoDir, 'Please set path to annotation directory using --annoDir option.')
+    for annoFile in glob.glob('%s/weight_dir/*.json' % args.coreDir):
+        annoFileName = annoFile.split('/')[-1]
+        try:
+            os.symlink('%s/weight_dir/%s' % (args.coreDir, annoFileName), '%s/%s' % (annoDir, annoFileName))
+        except FileExistsError:
+            os.remove('%s/%s' % (annoDir, annoFileName))
+            os.symlink('%s/weight_dir/%s' % (args.coreDir, annoFileName), '%s/%s' % (annoDir, annoFileName))
     annoQuery = args.annoQuery
 
     cpus = args.cpus
@@ -463,7 +473,7 @@ def searchOrtho(args):
     print('Done! Check output in %s' % fcatOut)
 
 def main():
-    version = '0.0.35'
+    version = '0.0.36'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')

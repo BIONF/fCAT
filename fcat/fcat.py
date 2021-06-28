@@ -23,6 +23,7 @@ import time
 from pathlib import Path
 import multiprocessing as mp
 import shutil
+import glob
 # import fcat.calcCutoff as fcatC
 import fcat.searchOrtho as fcatO
 import fcat.assessCompleteness as fcatR
@@ -51,8 +52,17 @@ def fcat(args):
         Path(outDir).mkdir(parents=True, exist_ok=True)
     annoDir = args.annoDir
     if annoDir == '':
-        annoDir = '%s/weight_dir' % args.coreDir
+        annoDir = '%s/fcatOutput/%s/weight_dir' % (outDir, args.coreSet)
+        Path(annoDir).mkdir(parents=True, exist_ok=True)
+        # annoDir = '%s/weight_dir' % args.coreDir
     annoDir = os.path.abspath(annoDir)
+    for annoFile in glob.glob('%s/weight_dir/*.json' % args.coreDir):
+        annoFileName = annoFile.split('/')[-1]
+        try:
+            os.symlink('%s/weight_dir/%s' % (args.coreDir, annoFileName), '%s/%s' % (annoDir, annoFileName))
+        except FileExistsError:
+            os.remove('%s/%s' % (annoDir, annoFileName))
+            os.symlink('%s/weight_dir/%s' % (args.coreDir, annoFileName), '%s/%s' % (annoDir, annoFileName))
     cpus = args.cpus
     if cpus >= mp.cpu_count():
         cpus = mp.cpu_count()-1
@@ -93,7 +103,7 @@ def fcat(args):
         fcatM.mergePP(args)
 
 def main():
-    version = '0.0.35'
+    version = '0.0.36'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
