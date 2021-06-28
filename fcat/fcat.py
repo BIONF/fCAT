@@ -58,11 +58,12 @@ def fcat(args):
     annoDir = os.path.abspath(annoDir)
     for annoFile in glob.glob('%s/weight_dir/*.json' % args.coreDir):
         annoFileName = annoFile.split('/')[-1]
-        try:
-            os.symlink('%s/weight_dir/%s' % (args.coreDir, annoFileName), '%s/%s' % (annoDir, annoFileName))
-        except FileExistsError:
-            os.remove('%s/%s' % (annoDir, annoFileName))
-            os.symlink('%s/weight_dir/%s' % (args.coreDir, annoFileName), '%s/%s' % (annoDir, annoFileName))
+        if not os.path.exists('%s/%s' % (annoDir, annoFileName)):
+            try:
+                os.symlink('%s/weight_dir/%s' % (args.coreDir, annoFileName), '%s/%s' % (annoDir, annoFileName))
+            except FileExistsError:
+                os.remove('%s/%s' % (annoDir, annoFileName))
+                os.symlink('%s/weight_dir/%s' % (args.coreDir, annoFileName), '%s/%s' % (annoDir, annoFileName))
     cpus = args.cpus
     if cpus >= mp.cpu_count():
         cpus = mp.cpu_count()-1
@@ -103,7 +104,7 @@ def fcat(args):
         fcatM.mergePP(args)
 
 def main():
-    version = '0.0.37'
+    version = '0.0.38'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')

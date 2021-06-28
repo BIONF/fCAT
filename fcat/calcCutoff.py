@@ -298,11 +298,12 @@ def calcGroupCutoff(args):
     annoDir = os.path.abspath(annoDir)
     for annoFile in glob.glob('%s/weight_dir/*.json' % args.coreDir):
         annoFileName = annoFile.split('/')[-1]
-        try:
-            os.symlink('%s/weight_dir/%s' % (args.coreDir, annoFileName), '%s/%s' % (annoDir, annoFileName))
-        except FileExistsError:
-            os.remove('%s/%s' % (annoDir, annoFileName))
-            os.symlink('%s/weight_dir/%s' % (args.coreDir, annoFileName), '%s/%s' % (annoDir, annoFileName))
+        if not os.path.exists('%s/%s' % (annoDir, annoFileName)):
+            try:
+                os.symlink('%s/weight_dir/%s' % (args.coreDir, annoFileName), '%s/%s' % (annoDir, annoFileName))
+            except FileExistsError:
+                os.remove('%s/%s' % (annoDir, annoFileName))
+                os.symlink('%s/weight_dir/%s' % (args.coreDir, annoFileName), '%s/%s' % (annoDir, annoFileName))
     fcatFn.checkFileExist(annoDir, '')
     blastDir = args.blastDir
     if blastDir == '':
@@ -347,7 +348,7 @@ def calcGroupCutoff(args):
     pool.join()
 
 def main():
-    version = '0.0.37'
+    version = '0.0.38'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
