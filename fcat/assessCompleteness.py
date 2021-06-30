@@ -235,7 +235,7 @@ def mode4(ppFile, missingGr, coreDir, coreSet, queryID, lenDiff):
                                 geneCat['dissimilar'].append(line+'\t1')
                                 # geneCat['similar'].append('\t'.join(line.split('\t')[0:-1])+'\t0')
                         else:
-                            if (length - meanLen) >= 0:# lenDiff:
+                            if (length - meanLen) >= lenDiff:
                                 assessment = addToDict(assessment, groupID, line.split('\t')[2], 'complete', length, '%s (sd=%s)' % (fcatFn.roundTo4(meanLen), fcatFn.roundTo4(stdevLen)))
                                 geneCat['similar'].append(line+'\t0')
                                 # geneCat['similar'].append('\t'.join(line.split('\t')[0:-1])+'\t1')
