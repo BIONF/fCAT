@@ -120,7 +120,8 @@ def mode2(ppFile, missingGr, coreDir, coreSet, queryID, outDir, fasDiff):
                         geneCat['similar'].append(line+'\t0')
                     else:
                         assessment = addToDict(assessment, groupID, line.split('\t')[2], 'dissimilar', meanFas, meanRefspec)
-                        geneCat['dissimilar'].append(line+'\t1')
+                        # geneCat['dissimilar'].append(line+'\t1')
+                        geneCat['dissimilar'].append('%s\t%s' % (line, meanRefspec - meanFas))
                 else:
                     noCutoff.append(groupID)
             else:
@@ -174,7 +175,8 @@ def mode3(ppFile, missingGr, coreDir, coreSet, queryID, fasDiff):
                         geneCat['similar'].append(line+'\t0')
                     else:
                         assessment = addToDict(assessment, groupID, line.split('\t')[2], 'dissimilar', meanFas, LCL)
-                        geneCat['dissimilar'].append(line+'\t1')
+                        # geneCat['dissimilar'].append(line+'\t1')
+                        geneCat['dissimilar'].append('%s\t%s' % (line, meanFas - LCL))
                 else:
                     noCutoff.append(groupID)
             else:
@@ -241,8 +243,9 @@ def mode4(ppFile, missingGr, coreDir, coreSet, queryID, lenDiff):
                                 # geneCat['similar'].append('\t'.join(line.split('\t')[0:-1])+'\t1')
                             else:
                                 assessment = addToDict(assessment, groupID, line.split('\t')[2], 'fragmented', length, '%s (sd=%s)' % (fcatFn.roundTo4(meanLen), fcatFn.roundTo4(stdevLen)))
-                                geneCat['dissimilar'].append(line+'\t1')
+                                # geneCat['dissimilar'].append(line+'\t1')
                                 # geneCat['similar'].append('\t'.join(line.split('\t')[0:-1])+'\t0')
+                                geneCat['dissimilar'].append('%s\t%s' % (line, length - meanLen))
                     else:
                         noCutoff.append(groupID)
                 else:
