@@ -65,8 +65,8 @@ def mode1(ppFile, missingGr, coreDir, coreSet, queryID, fasDiff):
                         geneCat['similar'].append(line+'\t0')
                     else:
                         assessment = addToDict(assessment, groupID, line.split('\t')[2], 'dissimilar', meanFas, meanGroup)
-                        # geneCat['dissimilar'].append(line+'\t1')
-                        geneCat['dissimilar'].append('%s\t%s' % (line, meanGroup - meanFas))
+                        geneCat['dissimilar'].append(line+'\t1')
+                        # geneCat['dissimilar'].append('%s\t%s' % (line, meanGroup - meanFas))
                 else:
                     noCutoff.append(groupID)
             else:
@@ -121,8 +121,8 @@ def mode2(ppFile, missingGr, coreDir, coreSet, queryID, outDir, fasDiff):
                         geneCat['similar'].append(line+'\t0')
                     else:
                         assessment = addToDict(assessment, groupID, line.split('\t')[2], 'dissimilar', meanFas, meanRefspec)
-                        # geneCat['dissimilar'].append(line+'\t1')
-                        geneCat['dissimilar'].append('%s\t%s' % (line, meanRefspec - meanFas))
+                        geneCat['dissimilar'].append(line+'\t1')
+                        # geneCat['dissimilar'].append('%s\t%s' % (line, meanRefspec - meanFas))
                 else:
                     noCutoff.append(groupID)
             else:
@@ -176,8 +176,8 @@ def mode3(ppFile, missingGr, coreDir, coreSet, queryID, fasDiff):
                         geneCat['similar'].append(line+'\t0')
                     else:
                         assessment = addToDict(assessment, groupID, line.split('\t')[2], 'dissimilar', meanFas, LCL)
-                        # geneCat['dissimilar'].append(line+'\t1')
-                        geneCat['dissimilar'].append('%s\t%s' % (line, meanFas - LCL))
+                        geneCat['dissimilar'].append(line+'\t1')
+                        # geneCat['dissimilar'].append('%s\t%s' % (line, meanFas - LCL))
                 else:
                     noCutoff.append(groupID)
             else:
@@ -226,10 +226,20 @@ def mode4(ppFile, missingGr, coreDir, coreSet, queryID, lenDiff):
                                 meanLen = float(l.split('\t')[1])
                             if l.split('\t')[0] == 'stdevLen':
                                 stdevLen = float(l.split('\t')[1])
-                        ppValue = abs(length - meanLen) / max(length, meanLen)
+                        deltaLen = abs(length - meanLen)
+                        ppValue = deltaLen / max(length, meanLen)
                         if stdevLen > 0:
-                            check = abs((length - meanLen) / (2 * stdevLen))
-                            if check <= 1:
+                            check = deltaLen / (2 * stdevLen))
+                            if check > 1 and deltaLen > lenDiff:
+                                assessment = addToDict(assessment, groupID, line.split('\t')[2], 'fragmented', length, '%s (sd=%s)' % (fcatFn.roundTo4(meanLen), fcatFn.roundTo4(stdevLen)))
+                                geneCat['dissimilar'].append(line+'\t1')
+                                # geneCat['similar'].append('\t'.join(line.split('\t')[0:-1])+'\t0')
+                            else:
+                                assessment = addToDict(assessment, groupID, line.split('\t')[2], 'complete', length, '%s (sd=%s)' % (fcatFn.roundTo4(meanLen), fcatFn.roundTo4(stdevLen)))
+                                geneCat['similar'].append(line+'\t0')
+                                # geneCat['similar'].append('\t'.join(line.split('\t')[0:-1])+'\t1')
+                        else:
+                            if (deltaLen + lenDiff) >= 0:
                                 assessment = addToDict(assessment, groupID, line.split('\t')[2], 'complete', length, '%s (sd=%s)' % (fcatFn.roundTo4(meanLen), fcatFn.roundTo4(stdevLen)))
                                 geneCat['similar'].append(line+'\t0')
                                 # geneCat['similar'].append('\t'.join(line.split('\t')[0:-1])+'\t1')
@@ -237,16 +247,7 @@ def mode4(ppFile, missingGr, coreDir, coreSet, queryID, lenDiff):
                                 assessment = addToDict(assessment, groupID, line.split('\t')[2], 'fragmented', length, '%s (sd=%s)' % (fcatFn.roundTo4(meanLen), fcatFn.roundTo4(stdevLen)))
                                 geneCat['dissimilar'].append(line+'\t1')
                                 # geneCat['similar'].append('\t'.join(line.split('\t')[0:-1])+'\t0')
-                        else:
-                            if (length - meanLen) >= lenDiff:
-                                assessment = addToDict(assessment, groupID, line.split('\t')[2], 'complete', length, '%s (sd=%s)' % (fcatFn.roundTo4(meanLen), fcatFn.roundTo4(stdevLen)))
-                                geneCat['similar'].append(line+'\t0')
-                                # geneCat['similar'].append('\t'.join(line.split('\t')[0:-1])+'\t1')
-                            else:
-                                assessment = addToDict(assessment, groupID, line.split('\t')[2], 'fragmented', length, '%s (sd=%s)' % (fcatFn.roundTo4(meanLen), fcatFn.roundTo4(stdevLen)))
-                                # geneCat['dissimilar'].append(line+'\t1')
-                                # geneCat['similar'].append('\t'.join(line.split('\t')[0:-1])+'\t0')
-                                geneCat['dissimilar'].append('%s\t%s' % (line, length - meanLen))
+                                # geneCat['dissimilar'].append('%s\t%s' % (line, length - meanLen))
                     else:
                         noCutoff.append(groupID)
                 else:
@@ -471,7 +472,7 @@ def assessCompteness(args):
     return(flag)
 
 def main():
-    version = '0.1.0'
+    version = '0.1.1'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
