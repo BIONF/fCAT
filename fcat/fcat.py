@@ -119,6 +119,8 @@ def main():
     optional.add_argument('-i', '--taxid', help='Taxonomy ID of gene set for species of interest', action='store', default=0, type=int)
     optional.add_argument('-m', '--mode', help='Score cutoff mode. (0) all modes, (1) all-vs-all FAS scores, (2) mean FAS of refspec seed, (3) confidence interval of all group FAS scores, (4) mean and stdev of sequence length',
                             action='store', default=0, choices=[0,1,2,3,4], type=int)
+    optional.add_argument('--fasDiff', help='Tolerant cutoff for FAS modes (from 0 to 1). Default = 0.0', action='store', default=0, type=float)
+    optional.add_argument('--lenDiff', help='Tolerant cutoff for length mode. Default = 0', action='store', default=0, type=int)
     optional.add_argument('--cpus', help='Number of CPUs used for annotation. Default = 4', action='store', default=4, type=int)
     optional.add_argument('--force', help='Force overwrite existing ortholog search and assessment output', action='store_true', default=False)
     optional.add_argument('--forceProfile', help='Force overwrite phylogenetic profiles output', action='store_true', default=False)
