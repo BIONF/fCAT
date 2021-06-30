@@ -183,6 +183,7 @@ def mode3(ppFile, missingGr, coreDir, coreSet, queryID, fasDiff):
                         geneCat['missing'].append(line+'\t0')
                     else:
                         geneCat['similar'].append(line+'\t0')
+    print(flag)
     if flag == 1:
         # create new pp file
         # newPP = '%s.mod' % ppFile
