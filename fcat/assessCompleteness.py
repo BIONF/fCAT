@@ -229,7 +229,7 @@ def mode4(ppFile, missingGr, coreDir, coreSet, queryID, lenDiff):
                         deltaLen = abs(length - meanLen)
                         ppValue = deltaLen / max(length, meanLen)
                         if stdevLen > 0:
-                            check = deltaLen / (2 * stdevLen))
+                            check = deltaLen / (2 * stdevLen)
                             if check > 1 and deltaLen > lenDiff:
                                 assessment = addToDict(assessment, groupID, line.split('\t')[2], 'fragmented', length, '%s (sd=%s)' % (fcatFn.roundTo4(meanLen), fcatFn.roundTo4(stdevLen)))
                                 geneCat['dissimilar'].append(line+'\t1')
