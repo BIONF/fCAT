@@ -65,7 +65,8 @@ def mode1(ppFile, missingGr, coreDir, coreSet, queryID, fasDiff):
                         geneCat['similar'].append(line+'\t0')
                     else:
                         assessment = addToDict(assessment, groupID, line.split('\t')[2], 'dissimilar', meanFas, meanGroup)
-                        geneCat['dissimilar'].append(line+'\t1')
+                        # geneCat['dissimilar'].append(line+'\t1')
+                        geneCat['dissimilar'].append('%s\t%s' % (line, meanGroup - meanFas))
                 else:
                     noCutoff.append(groupID)
             else:
