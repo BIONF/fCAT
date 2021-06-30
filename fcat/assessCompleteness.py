@@ -77,7 +77,7 @@ def mode1(ppFile, missingGr, coreDir, coreSet, queryID, fasDiff):
     if flag == 1:
         # create new pp file
         # newPP = '%s.mod' % ppFile
-        newPP = '%s.%s' % (ppFile, fasDiff)
+        newPP = '%s_%s' % (ppFile, fasDiff)
         newPPfile = open(newPP, 'w')
         newPPfile.write('geneID\tncbiID\torthoID\tFAS\tAssessment\n')
         newPPfile.write('%s\n' % '\n'.join(geneCat['dissimilar']))
@@ -132,7 +132,7 @@ def mode2(ppFile, missingGr, coreDir, coreSet, queryID, outDir, fasDiff):
     if flag == 1:
         # create new pp file
         # newPP = '%s.mod' % ppFile
-        newPP = '%s.%s' % (ppFile, fasDiff)
+        newPP = '%s_%s' % (ppFile, fasDiff)
         newPPfile = open(newPP, 'w')
         newPPfile.write('geneID\tncbiID\torthoID\tFAS\tAssessment\n')
         newPPfile.write('%s\n' % '\n'.join(geneCat['dissimilar']))
@@ -186,7 +186,7 @@ def mode3(ppFile, missingGr, coreDir, coreSet, queryID, fasDiff):
     if flag == 1:
         # create new pp file
         # newPP = '%s.mod' % ppFile
-        newPP = '%s.%s' % (ppFile, fasDiff)
+        newPP = '%s_%s' % (ppFile, fasDiff)
         newPPfile = open(newPP, 'w')
         newPPfile.write('geneID\tncbiID\torthoID\tFAS\tAssessment\n')
         newPPfile.write('%s\n' % '\n'.join(geneCat['dissimilar']))
@@ -256,7 +256,7 @@ def mode4(ppFile, missingGr, coreDir, coreSet, queryID, lenDiff):
     if flag == 1:
         # create new pp file
         # newPP = '%s.mod' % ppFile
-        newPP = '%s.%s' % (ppFile, lenDiff)
+        newPP = '%s_%s' % (ppFile, lenDiff)
         newPPfile = open(newPP, 'w')
         newPPfile.write('geneID\tncbiID\torthoID\tAssessment\n')
         newPPfile.write('%s\n' % '\n'.join(geneCat['dissimilar']))
