@@ -76,15 +76,15 @@ def mode1(ppFile, missingGr, coreDir, coreSet, queryID, fasDiff):
                         geneCat['similar'].append(line+'\t0')
     if flag == 1:
         # create new pp file
-        # newPP = '%s.mod' % ppFile
-        newPP = '%s_%s' % (ppFile, fasDiff)
+        newPP = '%s.mod' % ppFile
+        # newPP = '%s_%s' % (ppFile, fasDiff)
         newPPfile = open(newPP, 'w')
         newPPfile.write('geneID\tncbiID\torthoID\tFAS\tAssessment\n')
         newPPfile.write('%s\n' % '\n'.join(geneCat['dissimilar']))
         newPPfile.write('%s\n' % '\n'.join(geneCat['similar']))
         newPPfile.write('%s\n' % '\n'.join(geneCat['missing']))
         newPPfile.close()
-        # shutil.move('%s.mod' % ppFile, ppFile)
+        shutil.move('%s.mod' % ppFile, ppFile)
     return(assessment, noCutoff, flag)
 
 def mode2(ppFile, missingGr, coreDir, coreSet, queryID, outDir, fasDiff):
@@ -131,15 +131,15 @@ def mode2(ppFile, missingGr, coreDir, coreSet, queryID, outDir, fasDiff):
                         geneCat['similar'].append(line+'\t0')
     if flag == 1:
         # create new pp file
-        # newPP = '%s.mod' % ppFile
-        newPP = '%s_%s' % (ppFile, fasDiff)
+        newPP = '%s.mod' % ppFile
+        # newPP = '%s_%s' % (ppFile, fasDiff)
         newPPfile = open(newPP, 'w')
         newPPfile.write('geneID\tncbiID\torthoID\tFAS\tAssessment\n')
         newPPfile.write('%s\n' % '\n'.join(geneCat['dissimilar']))
         newPPfile.write('%s\n' % '\n'.join(geneCat['similar']))
         newPPfile.write('%s\n' % '\n'.join(geneCat['missing']))
         newPPfile.close()
-        # shutil.move('%s.mod' % ppFile, ppFile)
+        shutil.move('%s.mod' % ppFile, ppFile)
     return(assessment, noCutoff, flag)
 
 def mode3(ppFile, missingGr, coreDir, coreSet, queryID, fasDiff):
@@ -185,15 +185,15 @@ def mode3(ppFile, missingGr, coreDir, coreSet, queryID, fasDiff):
                         geneCat['similar'].append(line+'\t0')
     if flag == 1:
         # create new pp file
-        # newPP = '%s.mod' % ppFile
-        newPP = '%s_%s' % (ppFile, fasDiff)
+        newPP = '%s.mod' % ppFile
+        # newPP = '%s_%s' % (ppFile, fasDiff)
         newPPfile = open(newPP, 'w')
         newPPfile.write('geneID\tncbiID\torthoID\tFAS\tAssessment\n')
         newPPfile.write('%s\n' % '\n'.join(geneCat['dissimilar']))
         newPPfile.write('%s\n' % '\n'.join(geneCat['similar']))
         newPPfile.write('%s\n' % '\n'.join(geneCat['missing']))
         newPPfile.close()
-        # shutil.move('%s.mod' % ppFile, ppFile)
+        shutil.move('%s.mod' % ppFile, ppFile)
     return(assessment, noCutoff, flag)
 
 def mode4(ppFile, missingGr, coreDir, coreSet, queryID, lenDiff):
@@ -228,42 +228,42 @@ def mode4(ppFile, missingGr, coreDir, coreSet, queryID, lenDiff):
                             check = abs((length - meanLen) / (2 * stdevLen))
                             if check <= 1:
                                 assessment = addToDict(assessment, groupID, line.split('\t')[2], 'complete', length, '%s (sd=%s)' % (fcatFn.roundTo4(meanLen), fcatFn.roundTo4(stdevLen)))
-                                # geneCat['similar'].append(line+'\t0')
-                                geneCat['similar'].append('\t'.join(line.split('\t')[0:-1])+'\t1')
+                                geneCat['similar'].append(line+'\t0')
+                                # geneCat['similar'].append('\t'.join(line.split('\t')[0:-1])+'\t1')
                             else:
                                 assessment = addToDict(assessment, groupID, line.split('\t')[2], 'fragmented', length, '%s (sd=%s)' % (fcatFn.roundTo4(meanLen), fcatFn.roundTo4(stdevLen)))
-                                # geneCat['dissimilar'].append(line+'\t1')
-                                geneCat['similar'].append('\t'.join(line.split('\t')[0:-1])+'\t0')
+                                geneCat['dissimilar'].append(line+'\t1')
+                                # geneCat['similar'].append('\t'.join(line.split('\t')[0:-1])+'\t0')
                         else:
                             if (length - meanLen) >= 0:# lenDiff:
                                 assessment = addToDict(assessment, groupID, line.split('\t')[2], 'complete', length, '%s (sd=%s)' % (fcatFn.roundTo4(meanLen), fcatFn.roundTo4(stdevLen)))
-                                # geneCat['similar'].append(line+'\t0')
-                                geneCat['similar'].append('\t'.join(line.split('\t')[0:-1])+'\t1')
+                                geneCat['similar'].append(line+'\t0')
+                                # geneCat['similar'].append('\t'.join(line.split('\t')[0:-1])+'\t1')
                             else:
                                 assessment = addToDict(assessment, groupID, line.split('\t')[2], 'fragmented', length, '%s (sd=%s)' % (fcatFn.roundTo4(meanLen), fcatFn.roundTo4(stdevLen)))
-                                # geneCat['dissimilar'].append(line+'\t1')
-                                geneCat['similar'].append('\t'.join(line.split('\t')[0:-1])+'\t0')
+                                geneCat['dissimilar'].append(line+'\t1')
+                                # geneCat['similar'].append('\t'.join(line.split('\t')[0:-1])+'\t0')
                     else:
                         noCutoff.append(groupID)
                 else:
                     if not groupID == 'geneID':
                         if groupID in missingGr:
-                            # geneCat['missing'].append(line+'\t0')
-                            geneCat['similar'].append('\t'.join(line.split('\t')[0:-1])+'\t0.5')
+                            geneCat['missing'].append(line+'\t0')
+                            # geneCat['similar'].append('\t'.join(line.split('\t')[0:-1])+'\t0.5')
                         else:
-                            # geneCat['similar'].append(line+'\t0')
-                            geneCat['similar'].append('\t'.join(line.split('\t')[0:-1])+'\t1')
+                            geneCat['similar'].append(line+'\t0')
+                            # geneCat['similar'].append('\t'.join(line.split('\t')[0:-1])+'\t1')
     if flag == 1:
         # create new pp file
-        # newPP = '%s.mod' % ppFile
-        newPP = '%s_%s' % (ppFile, lenDiff)
+        newPP = '%s.mod' % ppFile
+        # newPP = '%s_%s' % (ppFile, lenDiff)
         newPPfile = open(newPP, 'w')
-        newPPfile.write('geneID\tncbiID\torthoID\tAssessment\n')
+        newPPfile.write('geneID\tncbiID\torthoID\tLength\tAssessment\n')
         newPPfile.write('%s\n' % '\n'.join(geneCat['dissimilar']))
         newPPfile.write('%s\n' % '\n'.join(geneCat['similar']))
         newPPfile.write('%s\n' % '\n'.join(geneCat['missing']))
         newPPfile.close()
-        # shutil.move('%s.mod' % ppFile, ppFile)
+        shutil.move('%s.mod' % ppFile, ppFile)
     return(assessment, noCutoff, flag)
 
 # def mode5(ppFile, coreDir, coreSet, queryID):
