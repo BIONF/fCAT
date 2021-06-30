@@ -187,6 +187,7 @@ def mode3(ppFile, missingGr, coreDir, coreSet, queryID, fasDiff):
         # create new pp file
         # newPP = '%s.mod' % ppFile
         newPP = '%s_%s' % (ppFile, fasDiff)
+        print(newPP)
         newPPfile = open(newPP, 'w')
         newPPfile.write('geneID\tncbiID\torthoID\tFAS\tAssessment\n')
         newPPfile.write('%s\n' % '\n'.join(geneCat['dissimilar']))
