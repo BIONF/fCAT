@@ -6,6 +6,9 @@
 
 Python package for fCAT, a **f**eature-aware **C**ompleteness **A**ssessment **T**ool
 
+![image](https://user-images.githubusercontent.com/19269760/126612060-dc4a016d-8297-4677-a73d-c91f6e765262.png)
+
+
 # Table of Contents
 * [How to install](#how-to-install)
 * [Usage](#usage)
@@ -67,6 +70,9 @@ The table below explains how the *specific ortholog group cutoffs* for each fCAT
 | Mode 4 | Mean and standard deviation of all core protein lengths | Length of query ortholog |
 
 *Note: __FAS scores__ are bidirectional FAS scors; __core protein__ or __core ortholog__ is protein in the core ortholog groups; __query protein__ or __query ortholog__ is ortholog protein of query species; __refspec__ is the specified reference species*
+
+![image](https://user-images.githubusercontent.com/19269760/126611864-2b5f6a7b-7f20-4bcf-937d-bdfcd7bec08c.png)
+
 
 # Bugs
 Any bug reports or comments, suggestions are highly appreciated. Please [open an issue on GitHub](https://github.com/BIONF/fCAT/issues/new) or be in touch via email.
