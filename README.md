@@ -79,6 +79,7 @@ Any bug reports or comments, suggestions are highly appreciated. Please [open an
 # Contributors
 - [Vinh Tran](https://github.com/trvinh)
 - [Giang Nguyen](https://github.com/giangnguyen0709)
+- [Ingo Ebersberger](https://github.com/ebersber)
 
 # Contact
 For further support or bug reports please contact: tran@bio.uni-frankfurt.de
