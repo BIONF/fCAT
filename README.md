@@ -6,8 +6,7 @@
 
 Python package for fCAT, a **f**eature-aware **C**ompleteness **A**ssessment **T**ool
 
-![image](https://user-images.githubusercontent.com/19269760/126612060-dc4a016d-8297-4677-a73d-c91f6e765262.png)
-
+![IMG_E95E1424A204-1](https://user-images.githubusercontent.com/19269760/126756118-f3e4fcb8-ee50-4945-9e50-158d0a9c174d.jpeg)
 
 # Table of Contents
 * [How to install](#how-to-install)
