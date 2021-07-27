@@ -51,7 +51,7 @@ def fcat(args):
     else:
         Path(outDir).mkdir(parents=True, exist_ok=True)
     annoDir = args.annoDir
-    if annoDir == '' || annoDir == '%s/weight_dir' % args.coreDir || annoDir == '%s/weight_dir/' % args.coreDir:
+    if annoDir == '' or annoDir == '%s/weight_dir' % args.coreDir or annoDir == '%s/weight_dir/' % args.coreDir:
         annoDir = '%s/fcatOutput/%s/weight_dir' % (outDir, args.coreSet)
         Path(annoDir).mkdir(parents=True, exist_ok=True)
         # annoDir = '%s/weight_dir' % args.coreDir

@@ -380,7 +380,7 @@ def searchOrtho(args):
     blastDir = os.path.abspath(blastDir)
     fcatFn.checkFileExist(blastDir, 'Please set path to blastDB using --blastDir option.')
     annoDir = args.annoDir
-    if annoDir == '' || annoDir == '%s/weight_dir' % args.coreDir || annoDir == '%s/weight_dir/' % args.coreDir:
+    if annoDir == '' or annoDir == '%s/weight_dir' % args.coreDir or annoDir == '%s/weight_dir/' % args.coreDir:
         annoDir = '%s/fcatOutput/%s/weight_dir' % (outDir, args.coreSet)
         Path(annoDir).mkdir(parents=True, exist_ok=True)
         # annoDir = '%s/weight_dir' % coreDir
@@ -474,7 +474,7 @@ def searchOrtho(args):
     print('Done! Check output in %s' % fcatOut)
 
 def main():
-    version = '0.1.2'
+    version = '0.1.1'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
