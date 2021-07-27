@@ -51,7 +51,7 @@ def fcat(args):
     else:
         Path(outDir).mkdir(parents=True, exist_ok=True)
     annoDir = args.annoDir
-    if annoDir == '':
+    if annoDir == '' || annoDir == '%s/weight_dir' % args.coreDir || annoDir == '%s/weight_dir/' % args.coreDir:
         annoDir = '%s/fcatOutput/%s/weight_dir' % (outDir, args.coreSet)
         Path(annoDir).mkdir(parents=True, exist_ok=True)
         # annoDir = '%s/weight_dir' % args.coreDir
@@ -104,7 +104,7 @@ def fcat(args):
         fcatM.mergePP(args)
 
 def main():
-    version = '0.1.1'
+    version = '0.1.2'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
