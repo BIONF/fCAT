@@ -6,7 +6,7 @@
 
 Python package for fCAT, a **f**eature-aware **C**ompleteness **A**ssessment **T**ool
 
-![IMG_E95E1424A204-1](https://user-images.githubusercontent.com/19269760/126756118-f3e4fcb8-ee50-4945-9e50-158d0a9c174d.jpeg)
+<img width="744" alt="image" src="https://user-images.githubusercontent.com/19269760/127915398-94cc2b3a-d292-4b33-8241-6014f3010a4c.png">
 
 # Table of Contents
 * [How to install](#how-to-install)
@@ -63,14 +63,14 @@ The table below explains how the *specific ortholog group cutoffs* for each fCAT
 
 | Score mode | Cutoff | Value |
 |---|---|---|
-| Mode 1 | Mean of FAS scores between all core orthologs | Mean of FAS scores between query ortholog and all core proteins |
-| Mode 2 | Mean of FAS scores between refspec and all other core orthologs | Mean of FAS scores between query ortholog and refspec protein |
-| Mode 3 | The lower bound of the confidence interval calculated by the distribution of all-vs-all FAS score in a core group | Mean of FAS scores between query ortholog and refspec protein |
-| Mode 4 | Mean and standard deviation of all core protein lengths | Length of query ortholog |
+| Mode 1 - Strict mode | Mean of FAS scores between all core orthologs | Mean of FAS scores between query ortholog and all core proteins |
+| Mode 2 - Selected mode | Mean of FAS scores between refspec and all other core orthologs | Mean of FAS scores between query ortholog and refspec protein |
+| Mode 3 - Relaxed mode | The lower bound of the confidence interval calculated by the distribution of all-vs-all FAS score in a core group | Mean of FAS scores between query ortholog and refspec protein |
+| Mode 4 - Length mode | Mean and standard deviation of all core protein lengths | Length of query ortholog |
 
 *Note: __FAS scores__ are bidirectional FAS scors; __core protein__ or __core ortholog__ is protein in the core ortholog groups; __query protein__ or __query ortholog__ is ortholog protein of query species; __refspec__ is the specified reference species*
 
-![image](https://user-images.githubusercontent.com/19269760/126611864-2b5f6a7b-7f20-4bcf-937d-bdfcd7bec08c.png)
+<img width="756" alt="image" src="https://user-images.githubusercontent.com/19269760/127915571-6fa4ff00-e5f9-4568-a2c5-520b9c830d25.png">
 
 
 # Bugs
