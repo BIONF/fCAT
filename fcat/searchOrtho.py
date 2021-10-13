@@ -200,6 +200,7 @@ def calcFAS(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
                 mergedFaFile.close()
                 # calculate fas scores for merged extended.fa using fas.runFdogFas
                 fdogFAS = 'fas.runFdogFas -i %s -w %s --cores %s --redo_anno --featuretypes %s' % (mergedFa, annoDir, cpus, annoToolsFcat)
+                print(fdogFAS)
                 try:
                     subprocess.run([fdogFAS], shell=True, check=True)
                 except:
@@ -241,6 +242,7 @@ def calcFASall(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
         mergedFaFile.close()
         # calculate fas scores for merged _all.extended.fa using fas.runFdogFas
         fdogFAS = 'fas.runFdogFas -i %s -w %s --cores %s --redo_anno --featuretypes %s' % (mergedFa, annoDir, cpus, annoToolsFcat)
+        print(fdogFAS)
         try:
             subprocess.run([fdogFAS], shell=True, check=True)
         except:
@@ -474,7 +476,7 @@ def searchOrtho(args):
     print('Done! Check output in %s' % fcatOut)
 
 def main():
-    version = '0.1.1'
+    version = '0.1.3'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
