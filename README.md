@@ -4,7 +4,11 @@
 [![Build Status](https://travis-ci.com/BIONF/fCAT.svg?branch=main)](https://travis-ci.com/BIONF/fCAT)
 ![Github Build](https://github.com/BIONF/fCAT/workflows/build/badge.svg)
 
-Python package for fCAT, a **f**eature-aware **C**ompleteness **A**ssessment **T**ool
+One of the critical steps in a genome sequencing project is to assess the completeness of the predicted gene set. The standard workflow starts with the identification of a set of core genes for the taxonomic group, in which the target species belongs to. The fraction of missing core genes serves then as a proxy of the target gene set completeness. 
+
+fCAT is a **f**eature-aware **C**ompleteness **A**ssessment **T**ool, that helps to answer the question "How complete is my gene set?". In particularly, fCAT checks for the presence of conserved genes (the core genes) of a specific taxonomy clade in the target gene set using feature-aware directed ortholog search ([[https://github.com/BIONF/fDOG|fDOG]]). In addition to the length criteria for classifying the found orthologs (as same as [[https://busco.ezlab.org/|BUSCO]]), fCAT utilizes the domain architecture similarity [[https://github.com/BIONF/FAS|FAS scores]] to further validate the orthologs. The later gives an alternative view on the accuracy of the target gene models, which shows how different the target orthologs in comparison to the core genes in their domain architecture.
+
+fCAT outputs both the summary result in a tabular text file and the phylogenetic profile of the core genes, which can be visualized using the tool [[https://github.com/BIONF/PhyloProfile|PhyloProfile]]. By analyzing the profiles of the entire orthologous groups within a specific taxonomy clade, we can further identify and ultimately correct erroneous gene annotations. 
 
 <img width="744" alt="image" src="https://user-images.githubusercontent.com/19269760/127915398-94cc2b3a-d292-4b33-8241-6014f3010a4c.png">
 
