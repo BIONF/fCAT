@@ -11,7 +11,7 @@ fCAT is a **f**eature-aware **C**ompleteness **A**ssessment **T**ool, that helps
 fCAT outputs both the summary result in a tabular text file and the phylogenetic profile of the core genes, which can be visualized using the tool [PhyloProfile](https://github.com/BIONF/PhyloProfile). By analyzing the profiles of the entire orthologous groups within a specific taxonomy clade, we can further identify and ultimately correct erroneous gene annotations. 
 
 <p align="center">
-  <img width="600" alt="image" src="https://user-images.githubusercontent.com/19269760/189751179-5053ede1-e040-4eeb-ae36-12d33e7954b9.png">
+  <img width="500" alt="image" src="https://user-images.githubusercontent.com/19269760/189752452-b8c00309-aed6-4f7a-b6c1-e9627407d507.png">
 </p>
 
 # Table of Contents
@@ -75,7 +75,7 @@ The table below explains how the *specific ortholog group cutoffs* for each fCAT
 | Mode 4 - Length mode | Mean and standard deviation of all core protein lengths | Length of query ortholog |
 
 <p align="center">
-  <img width="600" alt="image" src="https://user-images.githubusercontent.com/19269760/189751451-feb3f84f-ffcb-4b37-8f9d-8e800d6fb4d5.png">
+  <img width="500" alt="image" src="https://user-images.githubusercontent.com/19269760/189752525-1736e324-169f-4ae2-86a6-2c6a2868e610.png">
 </p>
 
 *Note: __FAS scores__ are bidirectional FAS scors; __core protein__ or __core ortholog__ is protein in the core ortholog groups; __query protein__ or __query ortholog__ is ortholog protein of query species; __refspec__ is the specified reference species*
