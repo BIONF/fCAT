@@ -10,7 +10,9 @@ fCAT is a **f**eature-aware **C**ompleteness **A**ssessment **T**ool, that helps
 
 fCAT outputs both the summary result in a tabular text file and the phylogenetic profile of the core genes, which can be visualized using the tool [PhyloProfile](https://github.com/BIONF/PhyloProfile). By analyzing the profiles of the entire orthologous groups within a specific taxonomy clade, we can further identify and ultimately correct erroneous gene annotations. 
 
-<img width="744" alt="image" src="https://user-images.githubusercontent.com/19269760/127915398-94cc2b3a-d292-4b33-8241-6014f3010a4c.png">
+<p align="center">
+  <img width="600" alt="image" src="https://user-images.githubusercontent.com/19269760/189751179-5053ede1-e040-4eeb-ae36-12d33e7954b9.png">
+</p>
 
 # Table of Contents
 * [How to install](#how-to-install)
@@ -68,11 +70,13 @@ The table below explains how the *specific ortholog group cutoffs* for each fCAT
 | Score mode | Cutoff | Value |
 |---|---|---|
 | Mode 1 - Strict mode | Mean of FAS scores between all core orthologs | Mean of FAS scores between query ortholog and all core proteins |
-| Mode 2 - Selected mode | Mean of FAS scores between refspec and all other core orthologs | Mean of FAS scores between query ortholog and refspec protein |
+| Mode 2 - Reference mode | Mean of FAS scores between refspec and all other core orthologs | Mean of FAS scores between query ortholog and refspec protein |
 | Mode 3 - Relaxed mode | The lower bound of the confidence interval calculated by the distribution of all-vs-all FAS score in a core group | Mean of FAS scores between query ortholog and refspec protein |
 | Mode 4 - Length mode | Mean and standard deviation of all core protein lengths | Length of query ortholog |
 
-<img width="756" alt="image" src="https://user-images.githubusercontent.com/19269760/127915571-6fa4ff00-e5f9-4568-a2c5-520b9c830d25.png">
+<p align="center">
+  <img width="600" alt="image" src="https://user-images.githubusercontent.com/19269760/189751451-feb3f84f-ffcb-4b37-8f9d-8e800d6fb4d5.png">
+</p>
 
 *Note: __FAS scores__ are bidirectional FAS scors; __core protein__ or __core ortholog__ is protein in the core ortholog groups; __query protein__ or __query ortholog__ is ortholog protein of query species; __refspec__ is the specified reference species*
 
