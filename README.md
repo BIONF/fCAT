@@ -93,7 +93,7 @@ Any bug reports or comments, suggestions are highly appreciated. Please [open an
 - [Ingo Ebersberger](https://github.com/ebersber)
 
 # How-To Cite
-Tran V and Ebersberger I. fCAT: Assessing gene set completeness using domain-architecture aware targeted ortholog searches. F1000Research 2022, 11:1091 (poster) (doi: 10.7490/f1000research.1119126.1)
+Tran V and Ebersberger I. fCAT: Assessing gene set completeness using domain-architecture aware targeted ortholog searches. F1000Research 2022, 11:1091 (poster) (doi: [10.7490/f1000research.1119126.1](https://doi.org/10.7490/f1000research.1119126.1))
 
 # Contact
 For further support or bug reports please contact: tran@bio.uni-frankfurt.de
