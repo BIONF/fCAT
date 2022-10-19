@@ -194,6 +194,9 @@ def calcFAS(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
                     if os.path.isdir(refDir + '/' + groupID):
                         singleFa = '%s/%s/%s.extended.fa' % (refDir, groupID, groupID)
                         if os.path.exists(singleFa):
+                            with open(singleFa) as f:
+                                if not queryID in f.read():
+                                    missing.append(groupID)
                             shutil.copyfileobj(open(singleFa, 'rb'), mergedFaFile)
                         else:
                             missing.append(groupID)
@@ -476,7 +479,7 @@ def searchOrtho(args):
     print('Done! Check output in %s' % fcatOut)
 
 def main():
-    version = '0.1.3'
+    version = '0.1.4'
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
