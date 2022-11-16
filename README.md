@@ -75,7 +75,7 @@ The table below explains how the *specific ortholog group cutoffs* for each fCAT
 |---|---|---|
 | Mode 1 - Strict mode | Mean of FAS scores between all core orthologs | Mean of FAS scores between query ortholog and all core proteins |
 | Mode 2 - Reference mode | Mean of FAS scores between refspec and all other core orthologs | Mean of FAS scores between query ortholog and refspec protein |
-| Mode 3 - Relaxed mode | The lower bound of the confidence interval calculated by the distribution of all-vs-all FAS score in a core group | Mean of FAS scores between query ortholog and refspec protein |
+| Mode 3 - Relaxed mode | The lower bound of the confidence interval calculated by the distribution of all-vs-all FAS score in a core group | Mean of FAS scores between query ortholog and all core proteins |
 | Mode 4 - Length mode | Mean and standard deviation of all core protein lengths | Length of query ortholog |
 
 <p align="center">
