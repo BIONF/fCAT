@@ -14,7 +14,7 @@ fCAT outputs both the summary result in a tabular text file and the phylogenetic
 [Click here for the full PDF version of the ECCB2022 poster](https://doi.org/10.7490/f1000research.1119126.1)
 
 <p align="center">
-  <img width="500" alt="image" src="https://user-images.githubusercontent.com/19269760/189752452-b8c00309-aed6-4f7a-b6c1-e9627407d507.png">
+  <img width="500" alt="image" src="https://user-images.githubusercontent.com/19269760/202210213-5ed72144-fa43-4d60-8e90-a95df5afcca5.png">
 </p>
 
 # Table of Contents
@@ -79,7 +79,7 @@ The table below explains how the *specific ortholog group cutoffs* for each fCAT
 | Mode 4 - Length mode | Mean and standard deviation of all core protein lengths | Length of query ortholog |
 
 <p align="center">
-  <img width="500" alt="image" src="https://user-images.githubusercontent.com/19269760/189752525-1736e324-169f-4ae2-86a6-2c6a2868e610.png">
+  <img width="500" alt="image" src="https://user-images.githubusercontent.com/19269760/202210343-aefbdf7b-4a38-44bf-9862-f74cc3bdd52a.png">
 </p>
 
 *Note: __FAS scores__ are bidirectional FAS scors; __core protein__ or __core ortholog__ is protein in the core ortholog groups; __query protein__ or __query ortholog__ is ortholog protein of query species; __refspec__ is the specified reference species*
