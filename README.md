@@ -47,6 +47,8 @@ and then add the following line to the end of your **~/.bashrc** or **~/.bash_pr
 export PATH=$HOME/.local/bin:$PATH
 ```
 
+*__Note:__ fCAT requires [R](https://cran.r-project.org) to be present! Please make sure that you have R installed on your computer.*
+
 # Usage
 
 The complete process of *fCAT* can be done using one function `fcat`
