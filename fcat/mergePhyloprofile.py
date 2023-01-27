@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 #######################################################################
-#  Copyright (C) 2020 Vinh Tran
+#  Copyright (C) 2022 Vinh Tran
 #
 #  Merge phyloprofile outputs for multiple taxa of the same core set
 #
@@ -19,6 +19,7 @@ import sys
 import os
 import argparse
 from pathlib import Path
+from pkg_resources import get_distribution
 import fcat.functions as fcatFn
 
 def mergePP(args):
@@ -32,7 +33,7 @@ def mergePP(args):
             outDir = outDir + '/' +coreSet
     fcatFn.checkFileExist(outDir,'')
     coreTaxaId = []
-    for coreSpec in os.listdir('%s/blast_dir' % coreDir):
+    for coreSpec in os.listdir('%s/coreTaxa_dir' % coreDir):
         coreTaxaId.append(coreSpec.split('@')[1])
 
     mode1out = set([])
@@ -74,7 +75,7 @@ def mergePP(args):
             fo.write("".join(domainOut))
 
 def main():
-    version = '0.1.4'
+    version = get_distribution('fcat').version
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     parser.add_argument('-d', '--coreDir', help='Path to core set directory, where folder core_orthologs can be found', action='store', default='', required=True)
     parser.add_argument('-c', '--coreSet', help='Name of core set, which is subfolder within coreDir/core_orthologs/ directory', action='store', default='', required=True)

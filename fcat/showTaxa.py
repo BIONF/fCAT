@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 #######################################################################
-#  Copyright (C) 2020 Vinh Tran
+#  Copyright (C) 2022 Vinh Tran
 #
 #  This script show possible reference taxa for each core set
 #
@@ -19,6 +19,7 @@ import sys
 import os
 import argparse
 from ete3 import NCBITaxa
+from pkg_resources import get_distribution
 import fcat.functions as fcatFn
 
 def getNcbiName(taxonName):
@@ -42,7 +43,7 @@ def printRefTaxa(args):
     sys.exit()
 
 def main():
-    version = '0.1.4'
+    version = get_distribution('fcat').version
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')

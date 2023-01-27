@@ -5,11 +5,11 @@
 [![Build Status](https://travis-ci.com/BIONF/fCAT.svg?branch=main)](https://travis-ci.com/BIONF/fCAT)
 ![Github Build](https://github.com/BIONF/fCAT/workflows/build/badge.svg)
 
-One of the critical steps in a genome sequencing project is to assess the completeness of the predicted gene set. The standard workflow starts with the identification of a set of core genes for the taxonomic group, in which the target species belongs to. The fraction of missing core genes serves then as a proxy of the target gene set completeness. 
+One of the critical steps in a genome sequencing project is to assess the completeness of the predicted gene set. The standard workflow starts with the identification of a set of core genes for the taxonomic group, in which the target species belongs to. The fraction of missing core genes serves then as a proxy of the target gene set completeness.
 
 fCAT is a **f**eature-aware **C**ompleteness **A**ssessment **T**ool, that helps to answer the question "How complete is my gene set?". In particularly, fCAT checks for the presence of conserved genes (the core genes) of a specific taxonomy clade in the target gene set using feature-aware directed ortholog search [fDOG](https://github.com/BIONF/fDOG). In addition to the length criteria for classifying the found orthologs (as same as [BUSCO](https://busco.ezlab.org)), fCAT utilizes the domain architecture similarity [FAS scores](https://github.com/BIONF/FAS) to further validate the orthologs. The later gives an alternative view on the accuracy of the target gene models, which shows how different the target orthologs in comparison to the core genes in their domain architecture.
 
-fCAT outputs both the summary result in a tabular text file and the phylogenetic profile of the core genes, which can be visualized using the tool [PhyloProfile](https://github.com/BIONF/PhyloProfile). By analyzing the profiles of the entire orthologous groups within a specific taxonomy clade, we can further identify and ultimately correct erroneous gene annotations. 
+fCAT outputs both the summary result in a tabular text file and the phylogenetic profile of the core genes, which can be visualized using the tool [PhyloProfile](https://github.com/BIONF/PhyloProfile). By analyzing the profiles of the entire orthologous groups within a specific taxonomy clade, we can further identify and ultimately correct erroneous gene annotations.
 
 [Click here for the full PDF version of the ECCB2022 poster](https://doi.org/10.7490/f1000research.1119126.1)
 
@@ -29,7 +29,7 @@ fCAT outputs both the summary result in a tabular text file and the phylogenetic
 
 # How to install
 
-*fCAT* tool is distributed as a python package called *fcat*. It is compatible with [Python ≥ v3.7](https://www.python.org/downloads/).
+*fCAT* tool is distributed as a python package called *fcat*. It is compatible with [Python ≥ v3.9](https://www.python.org/downloads/).
 
 You can install *fcat* using `pip`:
 ```

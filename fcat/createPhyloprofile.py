@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 #######################################################################
-#  Copyright (C) 2020 Vinh Tran
+#  Copyright (C) 2022 Vinh Tran
 #
 #  Create phylogenetic profile outputs from the ortholog search result
 #
@@ -26,6 +26,7 @@ import statistics
 import glob
 import multiprocessing as mp
 from tqdm import tqdm
+from pkg_resources import get_distribution
 from greedyFAS.mainFAS import fasInput
 import fcat.functions as fcatFn
 
@@ -79,7 +80,6 @@ def createProfile1(coreDir, outDir, coreSet, queryID, force, groupRefspec):
                 else:
                     groupScoreFwd[groupID].append(float(line.split('\t')[3]))
                     groupScoreRev[groupID].append(float(line.split('\t')[4]))
-
         # calculate mean fas score for query ortholog against all core proteins and add to phyloprofile output
         for groupID in groupOrtho:
             groupIDmod = '_'.join(groupID.split('_')[1:])
@@ -257,8 +257,8 @@ def createDomainFile(coreDir, outDir, coreSet, queryID, refspecFile, ppFile, cpu
                 orthoID = line.split('\t')[2].split('|')[2]
                 taxID = line.split('\t')[2].split('|')[1]
                 if taxID == queryID:
-                    # jsonFile = '%s/weight_dir/%s.json' % (coreDir, queryID)
-                    jsonFile = '%s/fcatOutput/%s/weight_dir/%s.json' % (outDir, coreSet, queryID)
+                    # jsonFile = '%s/annotation_dir/%s.json' % (coreDir, queryID)
+                    jsonFile = '%s/fcatOutput/%s/annotation_dir/%s.json' % (outDir, coreSet, queryID)
                     domainJobs.append((jsonFile, groupID, line.split('\t')[2], orthoID, line.split('\t')[2]))
                 else:
                     jsonFile = '%s/core_orthologs/%s/%s/fas_dir/annotation_dir/%s.json' % (coreDir, coreSet, groupID, groupID)
@@ -316,6 +316,8 @@ def createPhyloProfile(args):
                 sys.exit('No ortholog output found!')
         if os.path.exists('%s/last_refspec.txt' % fcatOut):
             groupRefspec = readRefspecFile('%s/last_refspec.txt' % fcatOut)
+            # print(groupRefspec) ####################################################################################################### REMOVEEEEEEEEEEEEE
+            # print(coreDir, outDir, coreSet, queryID, force, groupRefspec)
             createProfile1(coreDir, outDir, coreSet, queryID, force, groupRefspec)
             createProfile23(coreDir, outDir, coreSet, queryID, force)
             if args.noDomain == False:
@@ -329,7 +331,7 @@ def createPhyloProfile(args):
                 shutil.rmtree('%s/fdogOutput/' % (fcatOut))
 
 def main():
-    version = '0.1.4'
+    version = get_distribution('fcat').version
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')

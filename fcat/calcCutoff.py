@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 #######################################################################
-#  Copyright (C) 2020 Vinh Tran
+#  Copyright (C) 2022 Vinh Tran
 #
 #  Calculate FAS cutoff for each core ortholog group of the core set
 #
@@ -33,6 +33,7 @@ import statistics
 from scipy import stats
 from rpy2.robjects import FloatVector
 from rpy2.robjects.packages import importr
+from pkg_resources import get_distribution
 import fcat.functions as fcatFn
 
 def annoFAS(groupFa, annoDir, cpus, force):
@@ -292,18 +293,18 @@ def calcGroupCutoff(args):
     fcatFn.checkFileExist(coreDir + '/core_orthologs/' + coreSet, '')
     annoDir = args.annoDir
     if annoDir == '':
-        # annoDir = '%s/fcatOutput/%s/weight_dir' % (args.outDir, args.coreSet)
+        # annoDir = '%s/fcatOutput/%s/annotation_dir' % (args.outDir, args.coreSet)
         # Path(annoDir).mkdir(parents=True, exist_ok=True)
-        annoDir = '%s/weight_dir' % coreDir
+        annoDir = '%s/annotation_dir' % coreDir
     annoDir = os.path.abspath(annoDir)
-    for annoFile in glob.glob('%s/weight_dir/*.json' % args.coreDir):
+    for annoFile in glob.glob('%s/annotation_dir/*.json' % args.coreDir):
         annoFileName = annoFile.split('/')[-1]
         if not os.path.exists('%s/%s' % (annoDir, annoFileName)):
             try:
-                os.symlink('%s/weight_dir/%s' % (args.coreDir, annoFileName), '%s/%s' % (annoDir, annoFileName))
+                os.symlink('%s/annotation_dir/%s' % (args.coreDir, annoFileName), '%s/%s' % (annoDir, annoFileName))
             except FileExistsError:
                 os.remove('%s/%s' % (annoDir, annoFileName))
-                os.symlink('%s/weight_dir/%s' % (args.coreDir, annoFileName), '%s/%s' % (annoDir, annoFileName))
+                os.symlink('%s/annotation_dir/%s' % (args.coreDir, annoFileName), '%s/%s' % (annoDir, annoFileName))
     fcatFn.checkFileExist(annoDir, '')
     blastDir = args.blastDir
     if blastDir == '':
@@ -348,7 +349,7 @@ def calcGroupCutoff(args):
     pool.join()
 
 def main():
-    version = '0.1.4'
+    version = get_distribution('fcat').version
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')

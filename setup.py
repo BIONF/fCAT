@@ -1,15 +1,15 @@
 #!/bin/env python
 
 #######################################################################
-#  Copyright (C) 2020 Vinh Tran
+#  Copyright (C) 2022 Vinh Tran
 #
-#  fdog is the python package for feature-aware directed ortholog
-#  search. fdog is a free software: you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
+#  fcat is the python package for assessing the completeness and quality
+#  of a annotated gene set. fcat is a free software: you can redistribute it
+#  and/or modify it under the terms of the GNU General Public License as
+#  published by the Free Software Foundation, either version 3 of the License,
+#  or (at your option) any later version.
 #
-#  hamstr1s is distributed in the hope that it will be useful,
+#  fcat is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
@@ -26,7 +26,7 @@ with open("README.md", "r") as input:
 
 setup(
     name="fcat",
-    version="0.1.4",
+    version="0.1.5",
     python_requires='>=3.7.0',
     description="Python package for fCAT, a feature-aware completeness assessment tool",
     long_description=long_description,
@@ -41,8 +41,8 @@ setup(
         'tqdm',
         'ete3',
         'six',
-        'greedyFAS>=1.12.1',
-        'fdog>=0.0.45',
+        'greedyFAS>=1.16.0',
+        'fdog>=0.1.2',
         'rpy2',
         'tzlocal',
         'scipy'

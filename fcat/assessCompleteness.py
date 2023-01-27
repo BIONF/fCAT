@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 #######################################################################
-#  Copyright (C) 2020 Vinh Tran
+#  Copyright (C) 2022 Vinh Tran
 #
 #  Assign completeness status for each core gene in the core set
 #
@@ -23,6 +23,7 @@ import shutil
 import time
 import statistics
 import collections
+from pkg_resources import get_distribution
 import fcat.functions as fcatFn
 
 def addToDict(dict, groupID, seqID, type, value, cutoff):
@@ -271,57 +272,6 @@ def mode4(ppFile, missingGr, coreDir, coreSet, queryID, lenDiff):
         shutil.move('%s.mod' % ppFile, ppFile)
     return(assessment, noCutoff, flag)
 
-# def mode5(ppFile, coreDir, coreSet, queryID):
-#     noCutoff = []
-#     assessment = {}
-#     for line in fcatFn.readFile(ppFile):
-#         groupID = line.split('\t')[0]
-#         # if queryID in line.split('\t')[2]:
-#         if line.split('\t')[1] == 'ncbi'+str(queryID.split('@')[1]):
-#             meanFas = float(line.split('\t')[3])
-#             scoreFile = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir/3.cutoff' % (coreDir, coreSet, groupID)
-#             if os.path.exists(scoreFile):
-#                 meanGroup = 0
-#                 for l in fcatFn.readFile(scoreFile):
-#                     if l.split('\t')[0] == 'meanCons':
-#                         meanGroup = float(l.split('\t')[1])
-#                 if meanFas >= meanGroup:
-#                     assessment = addToDict(assessment, groupID, line.split('\t')[2], 'similar')
-#                 else:
-#                     assessment = addToDict(assessment, groupID, line.split('\t')[2], 'dissimilar')
-#             else:
-#                 noCutoff.append(groupID)
-#     return(assessment, noCutoff)
-#
-# def mode6(ppFile, coreDir, coreSet, queryID, outDir):
-#     noCutoff = []
-#     assessment = {}
-#     # get refspec for each group
-#     groupRefspec = {}
-#     refspecFile = '%s/%s/%s/last_refspec.txt' % (outDir, coreSet, queryID)
-#     for g in fcatFn.readFile(refspecFile):
-#         groupRefspec[g.split('\t')[0]] = g.split('\t')[1]
-#     # do assessment
-#     for line in fcatFn.readFile(ppFile):
-#         groupID = line.split('\t')[0]
-#         # if queryID in line.split('\t')[2]:
-#         if line.split('\t')[1] == 'ncbi'+str(queryID.split('@')[1]):
-#             # meanFas = statistics.mean((float(line.split('\t')[3]), float(line.split('\t')[4].strip())))
-#             meanFas = float(line.split('\t')[3])
-#             scoreFile = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir/4.cutoff' % (coreDir, coreSet, groupID)
-#             if os.path.exists(scoreFile):
-#                 meanRefspec = 0
-#                 for l in fcatFn.readFile(scoreFile):
-#                     if l.split('\t')[0] == groupRefspec[groupID].strip():
-#                         meanRefspec = float(l.split('\t')[1].strip())
-#                 if meanFas >= meanRefspec:
-#                     assessment = addToDict(assessment, groupID, line.split('\t')[2], 'similar')
-#                 else:
-#                     assessment = addToDict(assessment, groupID, line.split('\t')[2], 'dissimilar')
-#             else:
-#                 noCutoff.append(groupID)
-#     return(assessment, noCutoff)
-
 def writeReport(assessment, outDir, coreDir, coreSet, queryID, mode):
     missing = '%s/%s/%s/missing.txt' % (outDir, coreSet, queryID)
     ignored = '%s/%s/%s/ignored.txt' % (outDir, coreSet, queryID)
@@ -375,12 +325,6 @@ def doAssessment(ppDir, coreDir, coreSet, queryID, outDir, mode, fasDiff, lenDif
     elif mode == 4:
         ppFile = '%s/%s_length.phyloprofile' % (ppDir, queryID)
         (assessment, noCutoff, flag) = mode4(ppFile, missingGr, coreDir, coreSet, queryID, lenDiff)
-    # elif mode == 5:
-    #     ppFile = '%s/mode4.phyloprofile' % (ppDir)
-    #     (assessment, noCutoff) = mode5(ppFile, coreDir, coreSet, queryID)
-    # elif mode == 6:
-    #     ppFile = '%s/mode4.phyloprofile' % (ppDir)
-    #     (assessment, noCutoff) = mode6(ppFile, coreDir, coreSet, queryID, outDir)
     # print full report
     stat = writeReport(assessment, outDir, coreDir, coreSet, queryID, mode)
     # remove empty lines in pp file
@@ -472,7 +416,7 @@ def assessCompteness(args):
     return(flag)
 
 def main():
-    version = '0.1.4'
+    version = get_distribution('fcat').version
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')

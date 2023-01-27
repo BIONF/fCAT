@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 #######################################################################
-#  Copyright (C) 2020 Vinh Tran
+#  Copyright (C) 2022 Vinh Tran
 #
 #  Search orthologs for each core gene in the query species
 #
@@ -27,6 +27,7 @@ import shutil
 from tqdm import tqdm
 import time
 import datetime
+from pkg_resources import get_distribution
 import fcat.functions as fcatFn
 
 def make_archive(source, destination, format):
@@ -90,10 +91,10 @@ def parseQueryFa(coreSet, query, annoQuery, taxid, outDir, doAnno, annoDir, cpus
             if len(queryID) == 0:
                 sys.exit('Cannot identidy queryID!')
     else:
-        Path('%s/fcatOutput/%s/%s/genome_dir/%s' % (outDir, coreSet, queryID, queryID)).mkdir(parents=True, exist_ok=True)
-        shutil.copy(query, '%s/fcatOutput/%s/%s/genome_dir/%s/%s.fa' % (outDir, coreSet, queryID, queryID, queryID))
-        os.chmod('%s/fcatOutput/%s/%s/genome_dir/%s/%s.fa' % (outDir, coreSet, queryID, queryID, queryID), 0o755)
-        checkedFile = open('%s/fcatOutput/%s/%s/genome_dir/%s/%s.fa.checked' % (outDir, coreSet, queryID, queryID, queryID), 'w')
+        Path('%s/fcatOutput/%s/%s/searchTaxa_dir/%s' % (outDir, coreSet, queryID, queryID)).mkdir(parents=True, exist_ok=True)
+        shutil.copy(query, '%s/fcatOutput/%s/%s/searchTaxa_dir/%s/%s.fa' % (outDir, coreSet, queryID, queryID, queryID))
+        os.chmod('%s/fcatOutput/%s/%s/searchTaxa_dir/%s/%s.fa' % (outDir, coreSet, queryID, queryID, queryID), 0o755)
+        checkedFile = open('%s/fcatOutput/%s/%s/searchTaxa_dir/%s/%s.fa.checked' % (outDir, coreSet, queryID, queryID, queryID), 'w')
         now = datetime.datetime.now()
         checkedFile.write(now.strftime("%Y-%m-%d %H:%M:%S"))
         checkedFile.close()
@@ -106,10 +107,10 @@ def parseQueryFa(coreSet, query, annoQuery, taxid, outDir, doAnno, annoDir, cpus
     # make link to new created annotation file (if needed)
     if doAnno:
         try:
-            os.symlink('%s/weight_dir/%s.json' % (outDir, queryID), '%s/%s.json' % (annoDir, queryID))
+            os.symlink('%s/annotation_dir/%s.json' % (outDir, queryID), '%s/%s.json' % (annoDir, queryID))
         except FileExistsError:
             os.remove( '%s/%s.json' % (annoDir, queryID))
-            os.symlink('%s/weight_dir/%s.json' % (outDir, queryID),  '%s/%s.json' % (annoDir, queryID))
+            os.symlink('%s/annotation_dir/%s.json' % (outDir, queryID),  '%s/%s.json' % (annoDir, queryID))
     return(queryID)
 
 def checkRefspec(refspecList, groupFa):
@@ -128,14 +129,14 @@ def readRefspecFile(refspecFile):
         groupRefspec[line.split('\t')[0]] = line.split('\t')[1]
     return(groupRefspec)
 
-def prepareJob(coreDir, coreSet, queryID, refspecList, outDir, blastDir, annoDir, annoQuery, force, cpus):
+def prepareJob(coreDir, coreSet, queryID, refspecList, outDir, coreTaxa_dir, annoDir, annoQuery, force, cpus):
     fdogJobs = []
     ignored = []
     groupRefspec = {}
     hmmPath = coreDir + '/core_orthologs/' + coreSet
     groups = os.listdir(hmmPath)
     if len(groups) > 0:
-        searchPath = '%s/fcatOutput/%s/%s/genome_dir' % (outDir, coreSet, queryID)
+        searchTaxa_path = '%s/fcatOutput/%s/%s/searchTaxa_dir' % (outDir, coreSet, queryID)
         # create single fdog job for each core group
         for groupID in groups:
             if os.path.isdir(hmmPath + '/' + groupID):
@@ -147,23 +148,23 @@ def prepareJob(coreDir, coreSet, queryID, refspecList, outDir, blastDir, annoDir
                 else:
                     outPath = '%s/fcatOutput/%s/%s/fdogOutput/%s' % (outDir, coreSet, queryID, refspec)
                     if not os.path.exists('%s/%s/%s.phyloprofile' % (outPath, groupID, groupID)) or force:
-                        fdogJobs.append([groupFa, groupID, refspec, outPath, blastDir, hmmPath, searchPath, force])
+                        fdogJobs.append([groupFa, groupID, refspec, outPath, coreTaxa_dir, hmmPath, searchTaxa_path, force])
                     groupRefspec[groupID] = refspec
     else:
         sys.exit('No core group found at %s' % (coreDir + '/core_orthologs/' + coreSet))
     return(fdogJobs, ignored, groupRefspec)
 
 def runFdog(args):
-    (seqFile, seqName, refSpec, outPath, blastPath, hmmPath, searchPath, force) = args
-    fdog = 'fdog.run --seqFile %s --seqName %s --refspec %s --outpath %s --blastpath %s --hmmpath %s --searchpath %s --fasoff --reuseCore --checkCoorthologsRef --cpu 1' % (seqFile, seqName, refSpec, outPath, blastPath, hmmPath, searchPath)
+    (seqFile, jobName, refSpec, outPath, coreTaxa_path, hmmPath, searchTaxa_path, force) = args
+    fdog = 'fdog.run --seqFile %s --jobName %s --refspec %s --outpath %s --corepath %s --hmmpath %s --searchpath %s --fasOff --reuseCore --cpu 1' % (seqFile, jobName, refSpec, outPath, coreTaxa_path, hmmPath, searchTaxa_path)
     if force:
         fdog = fdog + ' --force'
     fdog = fdog + ' > /dev/null 2>&1'
     try:
         subprocess.run([fdog], shell=True, check=True)
-        os.remove(seqName + '.fa')
-    except:
-        print('\033[91mProblem occurred while running fDOG for \'%s\' core group\033[0m\n%s' % (seqName, fdog))
+    except Exception as e:
+        print(f'\033[91mProblem occurred while running fDOG for \'{jobName}\' core group:\033[0m\n{e}\nCommand used:\n{fdog}')
+
 
 def outputMode(outDir, coreSet, queryID, force, approach):
     phyloprofileDir = '%s/fcatOutput/%s/%s/phyloprofileOutput' % (outDir, coreSet, queryID)
@@ -186,13 +187,14 @@ def calcFAS(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
         if os.path.isdir(fdogOutDir + '/' + refSpec):
             # merge single extended.fa files for each refspec
             refDir = fdogOutDir + '/' + refSpec
-            groups = os.listdir(refDir)
+            items = os.listdir(refDir)
             mergedFa = '%s/%s.extended.fa' % (refDir, refSpec)
             if not os.path.exists(mergedFa) or force:
                 mergedFaFile = open(mergedFa, 'wb')
-                for groupID in groups:
-                    if os.path.isdir(refDir + '/' + groupID):
-                        singleFa = '%s/%s/%s.extended.fa' % (refDir, groupID, groupID)
+                for item in items:
+                    if item.endswith('extended.fa'):
+                        groupID = item.replace('.extended.fa','')
+                        singleFa = '%s/%s.extended.fa' % (refDir, groupID)
                         if os.path.exists(singleFa):
                             with open(singleFa) as f:
                                 if not queryID in f.read():
@@ -203,12 +205,12 @@ def calcFAS(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
                 mergedFaFile.close()
                 # calculate fas scores for merged extended.fa using fas.runFdogFas
                 fdogFAS = 'fas.runFdogFas -i %s -w %s --cores %s --redo_anno --featuretypes %s' % (mergedFa, annoDir, cpus, annoToolsFcat)
-                print(fdogFAS)
                 try:
                     subprocess.run([fdogFAS], shell=True, check=True)
                 except:
                     print('\033[91mProblem occurred while running fas.runFdogFas for \'%s\'\033[0m\n%s' % (mergedFa, fdogFAS))
     return(missing)
+
 
 def calcFASall(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
     annoToolsFcat = fcatFn.getAnnoToolFile()
@@ -221,31 +223,29 @@ def calcFASall(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
         for refSpec in out:
             if os.path.isdir(fdogOutDir + '/' + refSpec):
                 refDir = fdogOutDir + '/' + refSpec
-                groups = os.listdir(refDir)
-                for groupID in groups:
-                    if os.path.isdir(refDir + '/' + groupID):
-                        # merge each ortholog seq in single extended.fa file with core group fasta file
-                        # and write into mergedFaFile
-                        groupFa = '%s/core_orthologs/%s/%s/%s.fa' % (coreDir, coreSet, groupID, groupID)
-                        singleFa = '%s/%s/%s.extended.fa' % (refDir, groupID, groupID)
-                        if os.path.exists(singleFa):
-                            for s in SeqIO.parse(singleFa, 'fasta'):
-                                specID = s.id.split('|')[1]
-                                if specID == queryID:
-                                    if not groupID in count:
-                                        count[groupID] = 1
-                                    else:
-                                        count[groupID] = count[groupID]  + 1
-                                    id  = str(count[groupID]) + '_' + s.id
-                                    mergedFaFile.write('>%s\n%s\n' % (id, s.seq))
-                                    for c in SeqIO.parse(groupFa, 'fasta'):
-                                        mergedFaFile.write('>%s_%s|1\n%s\n' % (count[groupID], c.id, c.seq))
-                        # delete single fdog out
-                        # shutil.rmtree('%s/%s' % (refDir, groupID))
+                items = os.listdir(refDir)
+                for item in items:
+                    groupID = item.replace('.extended.fa','')
+                    # merge each ortholog seq in single extended.fa file with core group fasta file
+                    # and write into mergedFaFile
+                    groupFa = '%s/core_orthologs/%s/%s/%s.fa' % (coreDir, coreSet, groupID, groupID)
+                    singleFa = '%s/%s.extended.fa' % (refDir, groupID)
+                    if os.path.exists(singleFa) and not groupID == refSpec:
+                        for s in SeqIO.parse(singleFa, 'fasta'):
+                            specID = s.id.split('|')[1]
+                            if specID == queryID:
+                                if not groupID in count:
+                                    count[groupID] = 1
+                                else:
+                                    count[groupID] = count[groupID]  + 1
+                                id  = str(count[groupID]) + '_' + s.id
+                                mergedFaFile.write('>%s\n%s\n' % (id, s.seq))
+                                for c in SeqIO.parse(groupFa, 'fasta'):
+                                    mergedFaFile.write('>%s_%s|1\n%s\n' % (count[groupID], c.id, c.seq))
         mergedFaFile.close()
         # calculate fas scores for merged _all.extended.fa using fas.runFdogFas
         fdogFAS = 'fas.runFdogFas -i %s -w %s --cores %s --redo_anno --featuretypes %s' % (mergedFa, annoDir, cpus, annoToolsFcat)
-        print(fdogFAS)
+        # print(fdogFAS)
         try:
             subprocess.run([fdogFAS], shell=True, check=True)
         except:
@@ -379,26 +379,26 @@ def searchOrtho(args):
     else:
         Path(outDir).mkdir(parents=True, exist_ok=True)
     outDir = os.path.abspath(outDir)
-    blastDir = args.blastDir
-    if blastDir == '':
-        blastDir = '%s/blast_dir' % coreDir
-    blastDir = os.path.abspath(blastDir)
-    fcatFn.checkFileExist(blastDir, 'Please set path to blastDB using --blastDir option.')
+    coreTaxa_dir = args.coretaxadb
+    if coreTaxa_dir == '':
+        coreTaxa_dir = '%s/coreTaxa_dir' % coreDir
+    coreTaxa_dir = os.path.abspath(coreTaxa_dir)
+    fcatFn.checkFileExist(coreTaxa_dir, 'Please set path to blastDB using --coreTaxa_dir option.')
     annoDir = args.annoDir
-    if annoDir == '' or annoDir == '%s/weight_dir' % os.path.abspath(args.coreDir) or annoDir == '%s/weight_dir/' % os.path.abspath(args.coreDir):
-        annoDir = '%s/fcatOutput/%s/weight_dir' % (outDir, args.coreSet)
+    if annoDir == '' or annoDir == '%s/annotation_dir' % os.path.abspath(args.coreDir) or annoDir == '%s/annotation_dir/' % os.path.abspath(args.coreDir):
+        annoDir = '%s/fcatOutput/%s/annotation_dir' % (outDir, args.coreSet)
         Path(annoDir).mkdir(parents=True, exist_ok=True)
-        # annoDir = '%s/weight_dir' % coreDir
+        # annoDir = '%s/annotation_dir' % coreDir
     annoDir = os.path.abspath(annoDir)
     fcatFn.checkFileExist(annoDir, 'Please set path to annotation directory using --annoDir option.')
-    for annoFile in glob.glob('%s/weight_dir/*.json' % args.coreDir):
+    for annoFile in glob.glob('%s/annotation_dir/*.json' % args.coreDir):
         annoFileName = annoFile.split('/')[-1]
         if not os.path.exists('%s/%s' % (annoDir, annoFileName)):
             try:
-                os.symlink('%s/weight_dir/%s' % (args.coreDir, annoFileName), '%s/%s' % (annoDir, annoFileName))
+                os.symlink('%s/annotation_dir/%s' % (args.coreDir, annoFileName), '%s/%s' % (annoDir, annoFileName))
             except FileExistsError:
                 os.remove('%s/%s' % (annoDir, annoFileName))
-                os.symlink('%s/weight_dir/%s' % (args.coreDir, annoFileName), '%s/%s' % (annoDir, annoFileName))
+                os.symlink('%s/annotation_dir/%s' % (args.coreDir, annoFileName), '%s/%s' % (annoDir, annoFileName))
     annoQuery = args.annoQuery
 
     cpus = args.cpus
@@ -414,9 +414,9 @@ def searchOrtho(args):
     if doAnno == False:
         if os.path.exists( '%s/query_%s.json' % (annoDir, queryTaxId)):
             os.rename('%s/query_%s.json' % (annoDir, queryTaxId), annoDir+'/'+queryID+'.json')
-    # move genome_dir into fcatOutput/coreSet/query folder
-    src = '%s/genome_dir/%s' % (outDir, queryID)
-    dest = '%s/fcatOutput/%s/%s/genome_dir/%s' % (outDir, coreSet, queryID, queryID)
+    # move searchTaxa_dir into fcatOutput/coreSet/query folder
+    src = '%s/searchTaxa_dir/%s' % (outDir, queryID)
+    dest = '%s/fcatOutput/%s/%s/searchTaxa_dir/%s' % (outDir, coreSet, queryID, queryID)
     if not os.path.exists(dest):
         shutil.move(src, dest)
     # check old output files
@@ -425,13 +425,18 @@ def searchOrtho(args):
     print('Preparing...')
     groupRefspec = {}
     if status == 0:
-        (fdogJobs, ignored, groupRefspec) = prepareJob(coreDir, coreSet, queryID, refspecList, outDir, blastDir, annoDir, annoQuery, force, cpus)
+        (fdogJobs, ignored, groupRefspec) = prepareJob(coreDir, coreSet, queryID, refspecList, outDir, coreTaxa_dir, annoDir, annoQuery, force, cpus)
         print('Searching orthologs...')
         os.chdir('%s/fcatOutput/%s/%s' % (outDir, coreSet, queryID))
-        pool = mp.Pool(cpus)
         fdogOut = []
-        for _ in tqdm(pool.imap_unordered(runFdog, fdogJobs), total=len(fdogJobs)):
-            fdogOut.append(_)
+        if cpus == 1:
+            for job in fdogJobs:
+                tmp = runFdog(job)
+                fdogOut.append(tmp)
+        else:
+            pool = mp.Pool(cpus)
+            for _ in tqdm(pool.imap_unordered(runFdog, fdogJobs), total=len(fdogJobs)):
+                fdogOut.append(_)
         # write ignored groups and refspec for each group based on given refspec list
         ignoredFile = open('%s/fcatOutput/%s/%s/ignored.txt' % (outDir, coreSet, queryID), 'w')
         if len(ignored) > 0:
@@ -471,15 +476,15 @@ def searchOrtho(args):
             print('Cannot archiving fdog output!')
 
     if keep == False:
-        fcatFn.deleteFolder('%s/fcatOutput/%s/%s/genome_dir' % (outDir, coreSet, queryID))
+        fcatFn.deleteFolder('%s/fcatOutput/%s/%s/searchTaxa_dir' % (outDir, coreSet, queryID))
         # # print('Cleaning up...') ### no idea why rmtree not works :(
-        # if os.path.exists('%s/fcatOutput/%s/%s/genome_dir' % (outDir, coreSet, queryID)):
-        #     shutil.rmtree('%s/fcatOutput/%s/%s/genome_dir' % (outDir, coreSet, queryID))
+        # if os.path.exists('%s/fcatOutput/%s/%s/searchTaxa_dir' % (outDir, coreSet, queryID)):
+        #     shutil.rmtree('%s/fcatOutput/%s/%s/searchTaxa_dir' % (outDir, coreSet, queryID))
     os.chdir(currDir)
     print('Done! Check output in %s' % fcatOut)
 
 def main():
-    version = '0.1.4'
+    version = get_distribution('fcat').version
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
@@ -488,8 +493,8 @@ def main():
     required.add_argument('-r', '--refspecList', help='List of reference species', action='store', default='', required=True)
     required.add_argument('-q', '--querySpecies', help='Path to gene set for species of interest', action='store', default='', required=True)
     optional.add_argument('-o', '--outDir', help='Path to output directory', action='store', default='')
-    optional.add_argument('-b', '--blastDir', help='Path to BLAST directory of all core species', action='store', default='')
-    optional.add_argument('-a', '--annoDir', help='Path to FAS annotation directory', action='store', default='')
+    optional.add_argument('--coretaxadb', help='Path to BLAST directory of all core species', action='store', default='')
+    optional.add_argument('--annoDir', help='Path to FAS annotation directory', action='store', default='')
     optional.add_argument('--annoQuery', help='Path to FAS annotation for species of interest', action='store', default='')
     optional.add_argument('-i', '--taxid', help='Taxonomy ID of gene set for species of interest', action='store', default=0, type=int)
     optional.add_argument('--cpus', help='Number of CPUs used for annotation. Default = 4', action='store', default=4, type=int)

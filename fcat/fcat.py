@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 #######################################################################
-#  Copyright (C) 2020 Vinh Tran
+#  Copyright (C) 2022 Vinh Tran
 #
 #  This script will do the complete completeness check for a given
 #  protein set.
@@ -24,6 +24,7 @@ from pathlib import Path
 import multiprocessing as mp
 import shutil
 import glob
+from pkg_resources import get_distribution
 # import fcat.calcCutoff as fcatC
 import fcat.searchOrtho as fcatO
 import fcat.assessCompleteness as fcatR
@@ -50,20 +51,21 @@ def fcat(args):
         outDir = os.getcwd()
     else:
         Path(outDir).mkdir(parents=True, exist_ok=True)
+    coreDir = os.path.abspath(args.coreDir)
     annoDir = args.annoDir
-    if annoDir == '' or annoDir == '%s/weight_dir' % os.path.abspath(args.coreDir) or annoDir == '%s/weight_dir/' % os.path.abspath(args.coreDir):
-        annoDir = '%s/fcatOutput/%s/weight_dir' % (outDir, args.coreSet)
+    if annoDir == '' or annoDir == '%s/annotation_dir' % coreDir or annoDir == '%s/annotation_dir/' % coreDir:
+        annoDir = '%s/fcatOutput/%s/annotation_dir' % (outDir, args.coreSet)
         Path(annoDir).mkdir(parents=True, exist_ok=True)
-        # annoDir = '%s/weight_dir' % args.coreDir
+        # annoDir = '%s/annotation_dir' % coreDir
     annoDir = os.path.abspath(annoDir)
-    for annoFile in glob.glob('%s/weight_dir/*.json' % args.coreDir):
+    for annoFile in glob.glob('%s/annotation_dir/*.json' % coreDir):
         annoFileName = annoFile.split('/')[-1]
         if not os.path.exists('%s/%s' % (annoDir, annoFileName)):
             try:
-                os.symlink('%s/weight_dir/%s' % (args.coreDir, annoFileName), '%s/%s' % (annoDir, annoFileName))
+                os.symlink('%s/annotation_dir/%s' % (coreDir, annoFileName), '%s/%s' % (annoDir, annoFileName))
             except FileExistsError:
                 os.remove('%s/%s' % (annoDir, annoFileName))
-                os.symlink('%s/weight_dir/%s' % (args.coreDir, annoFileName), '%s/%s' % (annoDir, annoFileName))
+                os.symlink('%s/annotation_dir/%s' % (coreDir, annoFileName), '%s/%s' % (annoDir, annoFileName))
     cpus = args.cpus
     if cpus >= mp.cpu_count():
         cpus = mp.cpu_count()-1
@@ -83,7 +85,7 @@ def fcat(args):
     # fcatC.calcGroupCutoff(args)
 
     # check for valid refspec
-    checkRefspec(args.coreDir, args.coreSet, str(args.refspecList).split(","))
+    checkRefspec(coreDir, args.coreSet, str(args.refspecList).split(","))
 
     # search for orthologs and create phylognetic profile files
     print('##### Searching for orthologs...')
@@ -104,7 +106,7 @@ def fcat(args):
         fcatM.mergePP(args)
 
 def main():
-    version = '0.1.4'
+    version = get_distribution('fcat').version
     parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
@@ -113,8 +115,8 @@ def main():
     required.add_argument('-r', '--refspecList', help='List of reference species', action='store', default='', required=True)
     required.add_argument('-q', '--querySpecies', help='Path to gene set for species of interest', action='store', default='', required=True)
     optional.add_argument('-o', '--outDir', help='Path to output directory', action='store', default='')
-    optional.add_argument('-b', '--blastDir', help='Path to BLAST directory of all core species', action='store', default='')
-    optional.add_argument('-a', '--annoDir', help='Path to FAS annotation directory', action='store', default='')
+    optional.add_argument('--coretaxadb', help='Path to BLAST directory of all core species', action='store', default='')
+    optional.add_argument('--annoDir', help='Path to FAS annotation directory', action='store', default='')
     optional.add_argument('--annoQuery', help='Path to FAS annotation for species of interest', action='store', default='')
     optional.add_argument('-i', '--taxid', help='Taxonomy ID of gene set for species of interest', action='store', default=0, type=int)
     optional.add_argument('-m', '--mode', help='Score cutoff mode. (0) all modes, (1) all-vs-all FAS scores, (2) mean FAS of refspec seed, (3) confidence interval of all group FAS scores, (4) mean and stdev of sequence length',
