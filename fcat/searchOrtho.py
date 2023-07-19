@@ -158,8 +158,8 @@ def runFdog(args):
     (seqFile, jobName, refSpec, outPath, coreTaxa_path, hmmPath, searchTaxa_path, force) = args
     fdog = 'fdog.run --seqFile %s --jobName %s --refspec %s --outpath %s --corepath %s --hmmpath %s --searchpath %s --fasOff --reuseCore --cpu 1' % (seqFile, jobName, refSpec, outPath, coreTaxa_path, hmmPath, searchTaxa_path)
     if force:
-        fdog = fdog + ' --force'
-    fdog = fdog + ' > /dev/null 2>&1'
+        fdog += ' --force'
+    fdog += ' > /dev/null 2>&1'
     try:
         subprocess.run([fdog], shell=True, check=True)
     except Exception as e:
@@ -204,6 +204,7 @@ def calcFAS(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
                             missing.append(groupID)
                 mergedFaFile.close()
                 # calculate fas scores for merged extended.fa using fas.runFdogFas
+                print('Calculating pairwise FAS scores between query orthologs and sequences of refspec...')
                 fdogFAS = 'fas.runFdogFas -i %s -w %s --cores %s --redo_anno --featuretypes %s' % (mergedFa, annoDir, cpus, annoToolsFcat)
                 try:
                     subprocess.run([fdogFAS], shell=True, check=True)
@@ -243,7 +244,10 @@ def calcFASall(coreDir, outDir, coreSet, queryID, annoDir, cpus, force):
                                 for c in SeqIO.parse(groupFa, 'fasta'):
                                     mergedFaFile.write('>%s_%s|1\n%s\n' % (count[groupID], c.id, c.seq))
         mergedFaFile.close()
+        if os.stat(mergedFa).st_size == 0:
+            sys.exit('WARNING: No ortholog for any core gene found!')
         # calculate fas scores for merged _all.extended.fa using fas.runFdogFas
+        print('Calculating FAS scores between query orthologs and all sequences in each core group...')
         fdogFAS = 'fas.runFdogFas -i %s -w %s --cores %s --redo_anno --featuretypes %s' % (mergedFa, annoDir, cpus, annoToolsFcat)
         # print(fdogFAS)
         try:
@@ -408,12 +412,18 @@ def searchOrtho(args):
     keep = args.keep
 
     currDir = os.getcwd()
+
     # check annotation of query species and get query ID
     (doAnno, queryTaxId) = checkQueryAnno(annoQuery, annoDir, taxid, query)
     queryID = parseQueryFa(coreSet, query, annoQuery, taxid, outDir, doAnno, annoDir, cpus)
     if doAnno == False:
         if os.path.exists( '%s/query_%s.json' % (annoDir, queryTaxId)):
             os.rename('%s/query_%s.json' % (annoDir, queryTaxId), annoDir+'/'+queryID+'.json')
+    # empty old directory if force is specified
+    if force:
+        fcatFn.deleteFolder(f'{outDir}/fcatOutput/{coreSet}/{queryID}')
+        # if os.path.exists(f'{outDir}/fcatOutput/{coreSet}/{queryID}'):
+        #     shutil.rmtree(f'{outDir}/fcatOutput/{coreSet}/{queryID}')
     # move searchTaxa_dir into fcatOutput/coreSet/query folder
     src = '%s/searchTaxa_dir/%s' % (outDir, queryID)
     dest = '%s/fcatOutput/%s/%s/searchTaxa_dir/%s' % (outDir, coreSet, queryID, queryID)
@@ -437,6 +447,8 @@ def searchOrtho(args):
             pool = mp.Pool(cpus)
             for _ in tqdm(pool.imap_unordered(runFdog, fdogJobs), total=len(fdogJobs)):
                 fdogOut.append(_)
+            pool.close()
+            pool.join()
         # write ignored groups and refspec for each group based on given refspec list
         ignoredFile = open('%s/fcatOutput/%s/%s/ignored.txt' % (outDir, coreSet, queryID), 'w')
         if len(ignored) > 0:
@@ -449,14 +461,12 @@ def searchOrtho(args):
             for g in groupRefspec:
                 refspecFile.write('%s\t%s\n' % (g, groupRefspec[g]))
             refspecFile.close()
-        pool.close()
-        pool.join()
 
     # if not status == 2:
-        print('Calculating pairwise FAS scores between query orthologs and sequences of refspec...')
-        missing = calcFAS(coreDir, outDir, coreSet, queryID, annoDir, cpus, force)
-        print('Calculating FAS scores between query orthologs and all sequences in each core group...')
+        # Calculating FAS scores between query orthologs and all sequences in each core group
         calcFASall(coreDir, outDir, coreSet, queryID, annoDir, cpus, force)
+        # Calculating pairwise FAS scores between query orthologs and sequences of refspec
+        missing = calcFAS(coreDir, outDir, coreSet, queryID, annoDir, cpus, force)
         # print('Calculating FAS scores between query orthologs and consensus sequence in each core group...')
         # calcFAScons(coreDir, outDir, coreSet, queryID, annoDir, cpus, force)
         # remove tmp folder
@@ -477,6 +487,7 @@ def searchOrtho(args):
 
     if keep == False:
         fcatFn.deleteFolder('%s/fcatOutput/%s/%s/searchTaxa_dir' % (outDir, coreSet, queryID))
+        fcatFn.deleteFolder('%s/searchTaxa_dir' % outDir)
         # # print('Cleaning up...') ### no idea why rmtree not works :(
         # if os.path.exists('%s/fcatOutput/%s/%s/searchTaxa_dir' % (outDir, coreSet, queryID)):
         #     shutil.rmtree('%s/fcatOutput/%s/%s/searchTaxa_dir' % (outDir, coreSet, queryID))
