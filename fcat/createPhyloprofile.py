@@ -48,8 +48,9 @@ def outputMode(outDir, coreSet, queryID, force, ppFile):
             mode = 0
     return(mode, phyloprofileDir)
 
-def createProfile1(coreDir, outDir, coreSet, queryID, force, groupRefspec):
+def createProfile13(coreDir, outDir, coreSet, queryID, force, groupRefspec):
     (mode, phyloprofileDir) = outputMode(outDir, coreSet, queryID, force, queryID+'_mode1.phyloprofile')
+
     if mode == 1 or mode == 3:
         # output files
         finalFa = open('%s/%s.mod.fa' % (phyloprofileDir, queryID), 'w')
@@ -128,7 +129,7 @@ def createProfile1(coreDir, outDir, coreSet, queryID, force, groupRefspec):
         # add missing groups
         if os.path.exists('%s/fcatOutput/%s/%s/missing.txt' % (outDir, coreSet, queryID)):
             for missingGr in fcatFn.readFile('%s/fcatOutput/%s/%s/missing.txt' % (outDir, coreSet, queryID)):
-                # add to mode2 profile
+                # add to mode1 profile
                 meanCoreFile = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir/2.cutoff' % (coreDir, coreSet, missingGr)
                 for tax in fcatFn.readFile(meanCoreFile):
                     if not tax.split('\t')[0] == 'taxa':
@@ -155,11 +156,9 @@ def createProfile1(coreDir, outDir, coreSet, queryID, force, groupRefspec):
         finalPhyloprofile.close()
         finalFa.close()
         finalLen.close()
-        # delete duplicate lines
-        # removeDup('%s/%s_mode1.phyloprofile' % (phyloprofileDir, queryID))
-        # removeDup('%s/%s_length.phyloprofile' % (phyloprofileDir, queryID))
+        os.symlink(f'{phyloprofileDir}/{queryID}_mode1.phyloprofile', f'{phyloprofileDir}/{queryID}_mode3.phyloprofile')
 
-def createProfile23(coreDir, outDir, coreSet, queryID, force):
+def createProfile2(coreDir, outDir, coreSet, queryID, force):
     # output files
     (mode, phyloprofileDir) = outputMode(outDir, coreSet, queryID, force, queryID+'_mode2.phyloprofile')
     if not mode == 0:
@@ -174,7 +173,7 @@ def createProfile23(coreDir, outDir, coreSet, queryID, force):
         for refSpec in out:
             if os.path.isdir(fdogOutDir + '/' + refSpec):
                 refDir = fdogOutDir + '/' + refSpec
-                groups = os.listdir(refDir)
+                groups = []
                 # move to phyloprofile output dir
                 if os.path.exists('%s/%s.phyloprofile' % (refDir, refSpec)):
                     for line in fcatFn.readFile('%s/%s.phyloprofile' % (refDir, refSpec)):
@@ -184,8 +183,11 @@ def createProfile23(coreDir, outDir, coreSet, queryID, force):
                             line = '%s\t%s\t%s\t%s\n' % (tmpQuery[0], tmpQuery[1], tmpQuery[2], fcatFn.roundTo4(statistics.mean((float(line.split('\t')[3]), float(line.split('\t')[4])))))
                             if line not in lines_seen: # not a duplicate
                                 finalPhyloprofile.write(line)
+                                groups.append(tmpQuery[0])
                                 lines_seen.add(line)
                 # append profile of core sequences
+                if os.path.exists('%s/fcatOutput/%s/%s/missing.txt' % (outDir, coreSet, queryID)):
+                    groups = groups + fcatFn.readFile('%s/fcatOutput/%s/%s/missing.txt' % (outDir, coreSet, queryID))
                 for groupID in groups:
                     coreFasDir = '%s/core_orthologs/%s/%s/fas_dir/fasscore_dir' % (coreDir, coreSet, groupID)
                     for fasFile in glob.glob('%s/*.tsv' % coreFasDir):
@@ -220,7 +222,6 @@ def createProfile23(coreDir, outDir, coreSet, queryID, force):
         finalPhyloprofile.close()
         # delete duplicate lines
         # removeDup('%s/%s_mode2.phyloprofile' % (phyloprofileDir, queryID))
-        shutil.copy('%s/%s_mode2.phyloprofile' % (phyloprofileDir, queryID), '%s/%s_mode3.phyloprofile' % (phyloprofileDir, queryID))
 
 def getDomain(args):
     (jsonFile, groupID, seedIDmod, orthoID, orthoIDmod) = args
@@ -239,7 +240,7 @@ def getDomain(args):
                         out.append(groupID + "#" + seedIDmod + "\t" + orthoIDmod + "\t" + str(proteome[orthoID]["length"]) +
                                 "\t" + feature + "\t" + str(instance[0]) + "\t" + str(instance[1]) + "\tNA\tN")
     else:
-        sys.exit('No annotation for %s found in %s' % (orthoID, jsonFile))
+        print('No annotation for %s found in %s' % (orthoID, jsonFile))
     return('\n'.join(out))
 
 def createDomainFile(coreDir, outDir, coreSet, queryID, refspecFile, ppFile, cpus, force):
@@ -316,10 +317,8 @@ def createPhyloProfile(args):
                 sys.exit('No ortholog output found!')
         if os.path.exists('%s/last_refspec.txt' % fcatOut):
             groupRefspec = readRefspecFile('%s/last_refspec.txt' % fcatOut)
-            # print(groupRefspec) ####################################################################################################### REMOVEEEEEEEEEEEEE
-            # print(coreDir, outDir, coreSet, queryID, force, groupRefspec)
-            createProfile1(coreDir, outDir, coreSet, queryID, force, groupRefspec)
-            createProfile23(coreDir, outDir, coreSet, queryID, force)
+            createProfile13(coreDir, outDir, coreSet, queryID, force, groupRefspec)
+            createProfile2(coreDir, outDir, coreSet, queryID, force)
             if args.noDomain == False:
                 createDomainFile(coreDir, outDir, coreSet, queryID, '%s/last_refspec.txt' % fcatOut, '%s/phyloprofileOutput/%s_mode1.phyloprofile' % (fcatOut, queryID), args.cpus, force)
         else:
