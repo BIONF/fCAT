@@ -33,7 +33,7 @@ import statistics
 from scipy import stats
 from rpy2.robjects import FloatVector
 from rpy2.robjects.packages import importr
-from pkg_resources import get_distribution
+from importlib.metadata import version, PackageNotFoundError
 import fcat.functions as fcatFn
 
 def annoFAS(groupFa, annoDir, cpus, force):
@@ -104,13 +104,11 @@ def prepareJob(coreDir, coreSet, annoDir, blastDir, bidirectional, force, forceC
                                     if not os.path.exists(dst):
                                         os.symlink(src, dst)
                             refGenome = '%s/%s/%s.fa' % (blastDir, ref, ref)
-                            #print(f'===>>> HERER {refGenome}\n{os.path.exists(refGenome)}\t{os.path.islink(refGenome)}\n{os.path.realpath(refGenome)}')
                             if not os.path.exists(refGenome):
                                 if os.path.islink(refGenome):
                                     refGenome = os.path.realpath(refGenome)
                                 else:
                                     sys.exit('%s not found!' % refGenome)
-                            #print("FOUND!")
                             #fcatFn.checkFileExist(refGenome, '')
                             fasJobs.append([s.id, ref, groupID, groupFa, annoDirTmp, outDir, refGenome, bidirectional, force])
                             groupRefSpec[groupID].append(ref)
@@ -351,8 +349,8 @@ def calcGroupCutoff(args):
     pool.join()
 
 def main():
-    version = get_distribution('fcat').version
-    parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
+    fcat_version = version("fcat")
+    parser = argparse.ArgumentParser(description='You are running fcat version ' + str(fcat_version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
     required.add_argument('-d', '--coreDir', help='Path to core set directory, where folder core_orthologs can be found', action='store', default='', required=True)

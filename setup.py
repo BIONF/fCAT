@@ -26,8 +26,8 @@ with open("README.md", "r") as input:
 
 setup(
     name="fcat",
-    version="0.1.8",
-    python_requires='>=3.7.0',
+    version="0.1.9",
+    python_requires='>=3.12.0',
     description="Python package for fCAT, a feature-aware completeness assessment tool",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -39,7 +39,7 @@ setup(
     install_requires=[
         'biopython',
         'tqdm',
-        'ete3',
+        'ete4',
         'six',
         'greedyFAS>=1.18.0',
         'fdog>=1.0.0',

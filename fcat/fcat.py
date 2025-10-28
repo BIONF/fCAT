@@ -24,7 +24,7 @@ from pathlib import Path
 import multiprocessing as mp
 import shutil
 import glob
-from pkg_resources import get_distribution
+from importlib.metadata import version, PackageNotFoundError
 # import fcat.calcCutoff as fcatC
 import fcat.searchOrtho as fcatO
 import fcat.assessCompleteness as fcatR
@@ -106,8 +106,8 @@ def fcat(args):
         fcatM.mergePP(args)
 
 def main():
-    version = get_distribution('fcat').version
-    parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
+    fcat_version = version("fcat")
+    parser = argparse.ArgumentParser(description='You are running fcat version ' + str(fcat_version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
     required.add_argument('-d', '--coreDir', help='Path to core set directory, where folder core_orthologs can be found', action='store', default='', required=True)

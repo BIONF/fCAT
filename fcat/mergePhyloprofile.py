@@ -19,7 +19,7 @@ import sys
 import os
 import argparse
 from pathlib import Path
-from pkg_resources import get_distribution
+from importlib.metadata import version, PackageNotFoundError
 import fcat.functions as fcatFn
 
 def mergePP(args):
@@ -75,8 +75,8 @@ def mergePP(args):
             fo.write("".join(domainOut))
 
 def main():
-    version = get_distribution('fcat').version
-    parser = argparse.ArgumentParser(description='You are running fcat version ' + str(version) + '.')
+    fcat_version = version("fcat")
+    parser = argparse.ArgumentParser(description='You are running fcat version ' + str(fcat_version) + '.')
     parser.add_argument('-d', '--coreDir', help='Path to core set directory, where folder core_orthologs can be found', action='store', default='', required=True)
     parser.add_argument('-c', '--coreSet', help='Name of core set, which is subfolder within coreDir/core_orthologs/ directory', action='store', default='', required=True)
     parser.add_argument('-o', '--outDir', help='Path to output directory', action='store', default='', required=True)
