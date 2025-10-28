@@ -104,12 +104,14 @@ def prepareJob(coreDir, coreSet, annoDir, blastDir, bidirectional, force, forceC
                                     if not os.path.exists(dst):
                                         os.symlink(src, dst)
                             refGenome = '%s/%s/%s.fa' % (blastDir, ref, ref)
+                            #print(f'===>>> HERER {refGenome}\n{os.path.exists(refGenome)}\t{os.path.islink(refGenome)}\n{os.path.realpath(refGenome)}')
                             if not os.path.exists(refGenome):
                                 if os.path.islink(refGenome):
                                     refGenome = os.path.realpath(refGenome)
                                 else:
                                     sys.exit('%s not found!' % refGenome)
-                            fcatFn.checkFileExist(refGenome, '')
+                            #print("FOUND!")
+                            #fcatFn.checkFileExist(refGenome, '')
                             fasJobs.append([s.id, ref, groupID, groupFa, annoDirTmp, outDir, refGenome, bidirectional, force])
                             groupRefSpec[groupID].append(ref)
                         # ###### consensus approach
@@ -308,7 +310,7 @@ def calcGroupCutoff(args):
     fcatFn.checkFileExist(annoDir, '')
     blastDir = args.blastDir
     if blastDir == '':
-        blastDir = '%s/blast_dir' % coreDir
+        blastDir = '%s/coreTaxa_dir' % coreDir
     blastDir = os.path.abspath(blastDir)
     fcatFn.checkFileExist(blastDir, '')
     cpus = args.cpus
@@ -355,8 +357,8 @@ def main():
     optional = parser.add_argument_group('optional arguments')
     required.add_argument('-d', '--coreDir', help='Path to core set directory, where folder core_orthologs can be found', action='store', default='', required=True)
     required.add_argument('-c', '--coreSet', help='Name of core set, which is subfolder within coreDir/core_orthologs/ directory', action='store', default='', required=True)
-    optional.add_argument('-a', '--annoDir', help='Path to FAS annotation directory', action='store', default='')
-    optional.add_argument('-b', '--blastDir', help='Path to BLAST directory of all core species', action='store', default='')
+    optional.add_argument('-a', '--annoDir', help='Path to FAS annotation directory (annotation_dir)', action='store', default='')
+    optional.add_argument('-b', '--blastDir', help='Path to BLAST directory of all core species (coreTaxa_dir)', action='store', default='')
     optional.add_argument('--cpus', help='Number of CPUs used for annotation. Default = 4', action='store', default=4, type=int)
     optional.add_argument('--bidirectional', help=argparse.SUPPRESS, action='store_true', default=False)
     optional.add_argument('--forceCutoffFas', help='Force overwrite existing data (FAS and cutoff)', action='store_true', default=False)
