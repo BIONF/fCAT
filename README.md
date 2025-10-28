@@ -2,7 +2,6 @@
 [![PyPI version](https://badge.fury.io/py/fcat.svg)](https://pypi.org/project/fcat/)
 [![Poster at: ECCB2022](https://img.shields.io/badge/Poster%20at-ECCB2022-orange)](https://doi.org/10.7490/f1000research.1119126.1)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Build Status](https://travis-ci.com/BIONF/fCAT.svg?branch=main)](https://travis-ci.com/BIONF/fCAT)
 ![Github Build](https://github.com/BIONF/fCAT/workflows/build/badge.svg)
 
 One of the critical steps in a genome sequencing project is to assess the completeness of the predicted gene set. The standard workflow starts with the identification of a set of core genes for the taxonomic group, in which the target species belongs to. The fraction of missing core genes serves then as a proxy of the target gene set completeness.
