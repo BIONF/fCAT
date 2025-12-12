@@ -37,6 +37,7 @@ def readRefspecFile(refspecFile):
     return(groupRefspec)
 
 def outputMode(outDir, coreSet, queryID, force, ppFile):
+    outDir = os.path.abspath(outDir)
     phyloprofileDir = '%s/fcatOutput/%s/%s/phyloprofileOutput' % (outDir, coreSet, queryID)
     Path(phyloprofileDir).mkdir(parents=True, exist_ok=True)
     if not os.path.exists('%s/%s' % (phyloprofileDir, ppFile)):
@@ -77,55 +78,74 @@ def createProfile13(coreDir, outDir, coreSet, queryID, force, groupRefspec):
                     groupScoreFwd[groupID] = []
                     groupScoreRev[groupID] = []
                 if queryID in line.split('\t')[2]:
-                    groupOrtho[groupID] = line.split('\t')[2]
+                    if not groupID in groupOrtho:
+                        groupOrtho[groupID] = []
+                    if not line.split('\t')[2] in groupOrtho[groupID]:
+                        groupOrtho[groupID].append(line.split('\t')[2])
                 else:
                     groupScoreFwd[groupID].append(float(line.split('\t')[3]))
                     groupScoreRev[groupID].append(float(line.split('\t')[4]))
         # calculate mean fas score for query ortholog against all core proteins and add to phyloprofile output
         for groupID in groupOrtho:
             groupIDmod = '_'.join(groupID.split('_')[1:])
-            groupOrthoMod = '_'.join(groupOrtho[groupID].split('_')[1:])
-            newline = '%s\t%s\t%s\t%s\n' % (groupIDmod, 'ncbi' + str(queryID.split('@')[1]), groupOrthoMod, fcatFn.roundTo4(statistics.mean((statistics.mean(groupScoreFwd[groupID]), statistics.mean(groupScoreRev[groupID])))))
-            if newline not in lines_seen: # not a duplicate
-                finalPhyloprofile.write(newline)
-                lines_seen.add(newline)
-            # append profile of core sequences for this group
-            meanCoreFile = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir/2.cutoff' % (coreDir, coreSet, groupIDmod)
-            for tax in fcatFn.readFile(meanCoreFile):
-                if not tax.split('\t')[0] == 'taxa':
-                    # not include core taxon that have the same taxonomy ID as query
-                    if queryID.split('@')[1] == groupRefspec[groupIDmod].split('@')[1]:
-                        if not tax.split('\t')[0] == groupRefspec[groupIDmod]:
+            for ortho in groupOrtho[groupID]:
+                groupOrthoMod = '_'.join(ortho.split('_')[1:])
+                newline = '%s\t%s\t%s\t%s\n' % (groupIDmod, 'ncbi' + str(queryID.split('@')[1]), groupOrthoMod, fcatFn.roundTo4(statistics.mean((statistics.mean(groupScoreFwd[groupID]), statistics.mean(groupScoreRev[groupID])))))
+                if newline not in lines_seen: # not a duplicate
+                    finalPhyloprofile.write(newline)
+                    lines_seen.add(newline)
+                # append profile of core sequences for this group
+                meanCoreFile = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir/2.cutoff' % (coreDir, coreSet, groupIDmod)
+                for tax in fcatFn.readFile(meanCoreFile):
+                    if not tax.split('\t')[0] == 'taxa':
+                        # not include core taxon that have the same taxonomy ID as query
+                        if queryID.split('@')[1] == groupRefspec[groupIDmod].split('@')[1]:
+                            if not tax.split('\t')[0] == groupRefspec[groupIDmod]:
+                                ppCore = '%s\t%s\t%s|1\t%s\n' % (groupIDmod, 'ncbi' + str(tax.split('\t')[0].split('@')[1]), tax.split('\t')[2].strip(), fcatFn.roundTo4(float(tax.split('\t')[1])))
+                                if ppCore not in lines_seen: # not a duplicate
+                                    finalPhyloprofile.write(ppCore)
+                                    lines_seen.add(ppCore)
+                        else:
                             ppCore = '%s\t%s\t%s|1\t%s\n' % (groupIDmod, 'ncbi' + str(tax.split('\t')[0].split('@')[1]), tax.split('\t')[2].strip(), fcatFn.roundTo4(float(tax.split('\t')[1])))
                             if ppCore not in lines_seen: # not a duplicate
                                 finalPhyloprofile.write(ppCore)
                                 lines_seen.add(ppCore)
-                    else:
-                        ppCore = '%s\t%s\t%s|1\t%s\n' % (groupIDmod, 'ncbi' + str(tax.split('\t')[0].split('@')[1]), tax.split('\t')[2].strip(), fcatFn.roundTo4(float(tax.split('\t')[1])))
-                        if ppCore not in lines_seen: # not a duplicate
-                            finalPhyloprofile.write(ppCore)
-                            lines_seen.add(ppCore)
         # length phyloprofile file and final fasta file
         checkFa = []
         for s in SeqIO.parse(mergedFa, 'fasta'):
             idMod = '_'.join(s.id.split('_')[1:])
-            if queryID.split('@')[1] == groupRefspec[groupIDmod].split('@')[1]:
-                if not idMod.split('|')[1] == groupRefspec[idMod.split('|')[0]]:
-                    if not idMod in checkFa:
-                        finalFa.write('>%s\n%s\n' % (idMod, s.seq))
-                        checkFa.append(idMod)
-                    ppLen = '%s\t%s\t%s\t%s\n' % (idMod.split('|')[0], 'ncbi' + str(idMod.split('|')[1].split('@')[1]), idMod, len(s.seq))
-                    if ppLen not in linesLen_seen: # not a duplicate
-                        finalLen.write(ppLen)
-                        linesLen_seen.add(ppLen)
-            else:
-                if not idMod in checkFa:
-                    finalFa.write('>%s\n%s\n' % (idMod, s.seq))
-                    checkFa.append(idMod)
+            if not groupRefspec[idMod.split('|')[0]] == idMod.split('|')[1]:
                 ppLen = '%s\t%s\t%s\t%s\n' % (idMod.split('|')[0], 'ncbi' + str(idMod.split('|')[1].split('@')[1]), idMod, len(s.seq))
+                ppLen = f"{idMod.split('|')[0]}\tncbi{str(idMod.split('|')[1].split('@')[1])}\t{idMod}\t{len(s.seq)}\n"
                 if ppLen not in linesLen_seen: # not a duplicate
                     finalLen.write(ppLen)
                     linesLen_seen.add(ppLen)
+                if not idMod in checkFa:
+                    finalFa.write('>%s\n%s\n' % (idMod, s.seq))
+                    checkFa.append(idMod)
+            # else:
+            #     print(f'Skipped: {idMod}')
+            # if queryID.split('@')[1] == groupRefspec[groupIDmod].split('@')[1]:
+            #     if not idMod.split('|')[1] == groupRefspec[idMod.split('|')[0]]:
+            #         if not idMod in checkFa:
+            #             finalFa.write('>%s\n%s\n' % (idMod, s.seq))
+            #             checkFa.append(idMod)
+            #         ppLen = '%s\t%s\t%s\t%s\n' % (idMod.split('|')[0], 'ncbi' + str(idMod.split('|')[1].split('@')[1]), idMod, len(s.seq))
+            #         if ppLen not in linesLen_seen: # not a duplicate
+            #             finalLen.write(ppLen)
+            #             linesLen_seen.add(ppLen)
+            #             c += 1
+            #     # else:
+            #     #     print(f'{idMod.split('|')[1]}\t{groupRefspec[groupIDmod].split('@')[1]}') #### CHECK THIS AGAIN, WHY C is not 310
+            # else:
+            #     if not idMod in checkFa:
+            #         finalFa.write('>%s\n%s\n' % (idMod, s.seq))
+            #         checkFa.append(idMod)
+            #     ppLen = '%s\t%s\t%s\t%s\n' % (idMod.split('|')[0], 'ncbi' + str(idMod.split('|')[1].split('@')[1]), idMod, len(s.seq))
+            #     if ppLen not in linesLen_seen: # not a duplicate
+            #         finalLen.write(ppLen)
+            #         linesLen_seen.add(ppLen)
+            #         c += 1
         # add missing groups
         if os.path.exists('%s/fcatOutput/%s/%s/missing.txt' % (outDir, coreSet, queryID)):
             for missingGr in fcatFn.readFile('%s/fcatOutput/%s/%s/missing.txt' % (outDir, coreSet, queryID)):
@@ -174,6 +194,7 @@ def createProfile2(coreDir, outDir, coreSet, queryID, force):
             if os.path.isdir(fdogOutDir + '/' + refSpec):
                 refDir = fdogOutDir + '/' + refSpec
                 groups = []
+                refGene = {}
                 # move to phyloprofile output dir
                 if os.path.exists('%s/%s.phyloprofile' % (refDir, refSpec)):
                     for line in fcatFn.readFile('%s/%s.phyloprofile' % (refDir, refSpec)):
@@ -185,6 +206,10 @@ def createProfile2(coreDir, outDir, coreSet, queryID, force):
                                 finalPhyloprofile.write(line)
                                 groups.append(tmpQuery[0])
                                 lines_seen.add(line)
+                        elif refSpec in line:
+                            tmpSeed = line.split('\t')
+                            if not f"{tmpSeed[0]}|{refSpec}" in refGene:
+                                refGene[f'{tmpSeed[0]}|{refSpec}'] = '|'.join(tmpSeed[2].split('|')[:-1])
                 # append profile of core sequences
                 if os.path.exists('%s/fcatOutput/%s/%s/missing.txt' % (outDir, coreSet, queryID)):
                     groups = groups + fcatFn.readFile('%s/fcatOutput/%s/%s/missing.txt' % (outDir, coreSet, queryID))
@@ -194,12 +219,15 @@ def createProfile2(coreDir, outDir, coreSet, queryID, force):
                         if queryID.split('@')[1] == refSpec.split('@')[1]:
                             if not refSpec in fasFile:
                                 for fLine in fcatFn.readFile(fasFile):
-                                    if refSpec in fLine.split('\t')[0]:
+                                    if refGene[f'{groupID}|{refSpec}'] in fLine.split('\t')[0]:
+                                        # print(fLine)
                                         tmp = fLine.split('\t')
                                         revFAS = 0
                                         revFile = '%s/%s.tsv' % (coreFasDir, tmp[0].split('|')[1])
+                                        # print(revFile)
                                         for revLine in fcatFn.readFile(revFile):
                                             if tmp[1] == revLine.split('\t')[0]:
+                                                # print(f"{tmp[1]}\t{revLine.split('\t')[0]}")
                                                 revFAS = revLine.split('\t')[2].split('/')[0]
                                         coreLine = '%s\t%s\t%s\t%s\n' % (groupID, 'ncbi' + str(tmp[1].split('|')[1].split('@')[1]), tmp[1]+'|1', fcatFn.roundTo4(statistics.mean((float(tmp[2].split('/')[0]), float(revFAS)))))
                                         if coreLine not in lines_seen: # not a duplicate

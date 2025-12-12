@@ -114,9 +114,11 @@ def mode2(ppFile, missingGr, coreDir, coreSet, queryID, outDir, fasDiff):
                 scoreFile = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir/2.cutoff' % (coreDir, coreSet, groupID)
                 if os.path.exists(scoreFile):
                     meanRefspec = 0
+                    fasRefspec = []
                     for l in fcatFn.readFile(scoreFile):
                         if l.split('\t')[0] == groupRefspec[groupID].strip():
-                            meanRefspec = float(l.split('\t')[1].strip())
+                            fasRefspec.append(float(l.split('\t')[1].strip()))
+                    meanRefspec = round(statistics.mean(fasRefspec), 4)
                     if meanFas >= (meanRefspec - fasDiff):
                         assessment = addToDict(assessment, groupID, line.split('\t')[2], 'similar', meanFas, meanRefspec)
                         geneCat['similar'].append(line+'\t0')
@@ -161,7 +163,7 @@ def mode3(ppFile, missingGr, coreDir, coreSet, queryID, fasDiff):
                 flag = 1
             groupID = line.split('\t')[0]
             if queryID in line.split('\t')[2]:
-                meanFas = float(line.split('\t')[3]) #statistics.mean((float(line.split('\t')[3]), float(line.split('\t')[4].strip())))
+                meanFas = float(line.split('\t')[3])
                 scoreFile = '%s/core_orthologs/%s/%s/fas_dir/cutoff_dir/1.cutoff' % (coreDir, coreSet, groupID)
                 if os.path.exists(scoreFile):
                     LCL = 0
@@ -170,8 +172,7 @@ def mode3(ppFile, missingGr, coreDir, coreSet, queryID, fasDiff):
                         if l.split('\t')[0] == 'LCL':
                             LCL = float(l.split('\t')[1])
                         if l.split('\t')[0] == 'UCL':
-                            UCL = float(l.split('\t')[1])
-                    # if LCL <= meanFas <= UCL:
+                            UCL = float(l.split('\t')[1]) # currently not using!
                     if LCL <= (meanFas + fasDiff):
                         assessment = addToDict(assessment, groupID, line.split('\t')[2], 'similar', meanFas, LCL)
                         geneCat['similar'].append(line+'\t0')

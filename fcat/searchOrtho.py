@@ -154,11 +154,23 @@ def prepareJob(coreDir, coreSet, queryID, refspecList, outDir, coreTaxa_dir, ann
         sys.exit('No core group found at %s' % (coreDir + '/core_orthologs/' + coreSet))
     return(fdogJobs, ignored, groupRefspec)
 
+def countRefCore(refSpec, hmmPath, coreGroup):
+    count = 0
+    groupFa = '%s/%s/%s.fa' % (hmmPath, coreGroup, coreGroup)
+    for s in SeqIO.parse(groupFa, 'fasta'):
+        ref = s.id.split('|')[1]
+        if ref == refSpec:
+            count += 1
+    return(count)
+
+
 def runFdog(args):
     (seqFile, jobName, refSpec, outPath, coreTaxa_path, hmmPath, searchTaxa_path, force) = args
     fdog = 'fdog.run --seqFile %s --jobName %s --refspec %s --outpath %s --corepath %s --hmmpath %s --searchpath %s --fasOff --reuseCore --cpu 1' % (seqFile, jobName, refSpec, outPath, coreTaxa_path, hmmPath, searchTaxa_path)
     if force:
         fdog += ' --force'
+    if countRefCore(refSpec, hmmPath, jobName) > 1:
+        fdog += ' --scoreCutoff 100' # set a low score cutoff to find more orthologs
     fdog += ' > /dev/null 2>&1'
     try:
         subprocess.run([fdog], shell=True, check=True)
@@ -417,18 +429,15 @@ def searchOrtho(args):
     (doAnno, queryTaxId) = checkQueryAnno(annoQuery, annoDir, taxid, query)
     queryID = parseQueryFa(coreSet, query, annoQuery, taxid, outDir, doAnno, annoDir, cpus)
     if doAnno == False:
-        if os.path.exists( '%s/query_%s.json' % (annoDir, queryTaxId)):
+        if os.path.exists('%s/query_%s.json' % (annoDir, queryTaxId)):
             os.rename('%s/query_%s.json' % (annoDir, queryTaxId), annoDir+'/'+queryID+'.json')
-    # empty old directory if force is specified
-    if force:
-        fcatFn.deleteFolder(f'{outDir}/fcatOutput/{coreSet}/{queryID}')
-        # if os.path.exists(f'{outDir}/fcatOutput/{coreSet}/{queryID}'):
-        #     shutil.rmtree(f'{outDir}/fcatOutput/{coreSet}/{queryID}')
+
     # move searchTaxa_dir into fcatOutput/coreSet/query folder
     src = '%s/searchTaxa_dir/%s' % (outDir, queryID)
     dest = '%s/fcatOutput/%s/%s/searchTaxa_dir/%s' % (outDir, coreSet, queryID, queryID)
     if not os.path.exists(dest):
         shutil.move(src, dest)
+
     # check old output files
     fcatOut = '%s/fcatOutput/%s/%s' % (outDir, coreSet, queryID)
     status = checkResult(fcatOut, force)

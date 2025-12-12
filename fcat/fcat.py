@@ -70,12 +70,20 @@ def fcat(args):
     if cpus >= mp.cpu_count():
         cpus = mp.cpu_count()-1
 
+    # delete old results
+    if args.force:
+        if os.path.exists(f'{outDir}/fcatOutput/{args.coreSet}/{args.querySpecies}'):
+            fcatFn.deleteFolder(f'{outDir}/fcatOutput/{args.coreSet}/{args.querySpecies}')
+
     # get queryID
     if args.annoQuery == '':
         print('Annotation for %s not given! It might take a while for annotating...' % args.querySpecies)
     (doAnno, queryTaxId) = fcatO.checkQueryAnno(args.annoQuery, annoDir, args.taxid, args.querySpecies)
     args.queryID = fcatO.parseQueryFa(args.coreSet, os.path.abspath(args.querySpecies), args.annoQuery, str(args.taxid), outDir, doAnno, annoDir, cpus)
     print('Query ID used by fCAT and fDOG: %s' % args.queryID)
+    if args.queryID in str(args.refspecList).split(","):
+        sys.exit('ERROR: Query taxon is the same as reference species! Please choose other reference species.')
+
     if doAnno == False:
         if os.path.exists( '%s/query_%s.json' % (annoDir, queryTaxId)):
             os.remove('%s/query_%s.json' % (annoDir, queryTaxId))
@@ -91,11 +99,10 @@ def fcat(args):
     print('##### Searching for orthologs...')
     fcatO.searchOrtho(args)
 
-
     # create phyloprofile files
     print('##### Creating phylogenetic profiles....')
     fcatP.createPhyloProfile(args)
-
+    # sys.exit("DONE PROFILES!!!")
     # do completeness assessment
     print('##### Generating reports...')
     flag = fcatR.assessCompteness(args) # flag=0: no new ppFile needed

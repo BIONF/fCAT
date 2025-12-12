@@ -61,6 +61,7 @@ def prepareJob(coreDir, coreSet, annoDir, blastDir, bidirectional, force, forceC
     fasJobsCons = []
     groupRefSpec = {}
     gc = 1
+    seen = set()
     if force or forceCutoff:
         if os.path.exists('%s/core_orthologs/%s/done.txt' % (coreDir, coreSet)):
             os.remove('%s/core_orthologs/%s/done.txt' % (coreDir, coreSet))
@@ -109,8 +110,12 @@ def prepareJob(coreDir, coreSet, annoDir, blastDir, bidirectional, force, forceC
                                     refGenome = os.path.realpath(refGenome)
                                 else:
                                     sys.exit('%s not found!' % refGenome)
-                            #fcatFn.checkFileExist(refGenome, '')
-                            fasJobs.append([s.id, ref, groupID, groupFa, annoDirTmp, outDir, refGenome, bidirectional, force])
+                            # fasJobs.append([s.id, ref, groupID, groupFa, annoDirTmp, outDir, refGenome, bidirectional, force])
+                            param = [ref, groupID, groupFa, annoDirTmp, outDir, refGenome, bidirectional, force]
+                            t = tuple(param)
+                            if t not in seen:
+                                fasJobs.append([ref, groupID, groupFa, annoDirTmp, outDir, refGenome, bidirectional, force])
+                                seen.add(t)
                             groupRefSpec[groupID].append(ref)
                         # ###### consensus approach
                         # # get consensus sequence
@@ -129,26 +134,42 @@ def prepareJob(coreDir, coreSet, annoDir, blastDir, bidirectional, force, forceC
             sys.exit('No core group found at %s' % (coreDir + '/core_orthologs/' + coreSet))
     return(fasJobs, fasJobsCons, groupRefSpec)
 
+
+def getAllProtID(spec_id, faFile):
+    pattern = "|" + spec_id + "|"
+    with open(faFile) as f:
+        output = " ".join(
+            f"\"{line[1:].strip()}\""
+            for line in f
+            if line.startswith(">") and pattern in line
+        )
+    return output
+
+
 def calcFAS(args):
-    (queryID, refSpec, groupID, groupFa, annoDir, outputDir, ref, bidirectional, force) = args
+    (refSpec, groupID, groupFa, annoDir, outputDir, ref, bidirectional, force) = args
     flag = 0
     if not os.path.exists('%s/%s.tsv' % (outputDir, refSpec)):
         flag = 1
     else:
         if force:
-            os.remove('%s/%s.tsv' % (outputDir, refSpec))
+            if os.path.exists(f'{outputDir}/{refSpec}.tsv'):
+                os.remove('%s/%s.tsv' % (outputDir, refSpec))
             flag = 1
     if flag == 1:
         annoToolsFcat = fcatFn.getAnnoToolFile()
-        # calculate fas scores for each sequence vs all
-        fasCmd = 'fas.run -s \"%s\" -q \"%s\" --query_id \"%s\" -a %s -o %s -n %s --domain -r %s -t 10 -d %s' % (groupFa, groupFa, queryID, annoDir, outputDir, refSpec, ref, annoToolsFcat)
-        if bidirectional:
-            fasCmd = fasCmd + ' --bidirectional'
-        fasCmd = fasCmd + ' > /dev/null 2>&1'
-        try:
-            subprocess.run([fasCmd], shell=True, check=True)
-        except:
-            print('\033[91mProblem occurred while running fas.run\033[0m\n%s' % fasCmd)
+        if not os.path.exists(f'{outputDir}/{refSpec}.tsv'):
+            # calculate fas scores for each sequence vs all
+            query_list = getAllProtID(refSpec, groupFa)
+            fasCmd = f'fas.run -s "{groupFa}" -q "{groupFa}" --query_id {query_list} -a {annoDir} -o {outputDir} -n {refSpec} --domain -r {ref} -t 10 -d {annoToolsFcat}'
+            if bidirectional:
+                fasCmd = fasCmd + ' --bidirectional'
+            fasCmd = fasCmd + ' > /dev/null 2>&1'
+            try:
+                subprocess.run([fasCmd], shell=True, check=True)
+            except:
+                print('\033[91mProblem occurred while running fas.run\033[0m\n%s' % fasCmd)
+
 
 def parseFasOut(fasOutDir, refSpecList):
     fasScores = {}
@@ -162,7 +183,6 @@ def parseFasOut(fasOutDir, refSpecList):
                 sys.exit('%s is empty! Probably fas.run could not run correctly. Please check again!' % fasOut)
         if not refSpec in fasScores:
             fasScores[refSpec] = {}
-            fasScores[refSpec]['score'] = []
         if not refSpec in fasScores['all']:
             fasScores['all'][refSpec] = {}
         with open(fasOut, 'r') as file:
@@ -174,25 +194,26 @@ def parseFasOut(fasOutDir, refSpecList):
                         querySpec = tmp[0].split('|')[1]
                         if not querySpec in fasScores:
                             fasScores[querySpec] = {}
-                            fasScores[querySpec]['score'] = []
                         if not querySpec in fasScores['all'][refSpec]:
                             fasScores['all'][refSpec][querySpec] = []
+                        # initialization
+                        if not tmp[1] in fasScores[refSpec]:
+                            fasScores[refSpec][tmp[1]] = []
+                        if not tmp[0] in fasScores[querySpec]:
+                            fasScores[querySpec][tmp[0]] = []
                         # get scores for refSpec vs others
                         scores = tmp[2].split('/')
                         if scores[1] == 'NA':
-                            fasScores[refSpec]['score'].append(float(scores[0]))
-                            fasScores[refSpec]['gene'] = tmp[1]
-                            fasScores[querySpec]['score'].append(float(scores[0]))
-                            fasScores[querySpec]['gene'] = tmp[0]
+                            fasScores[refSpec][tmp[1]].append(float(scores[0]))
+                            fasScores[querySpec][tmp[0]].append(float(scores[0]))
                             fasScores['all'][refSpec][querySpec].append(float(scores[0]))
                         else:
                             scores = list(map(float, scores))
-                            fasScores[refSpec]['score'].append(statistics.mean(scores))
-                            fasScores[refSpec]['gene'] = tmp[1]
-                            fasScores[querySpec]['score'].append(statistics.mean(scores))
-                            fasScores[querySpec]['gene'] = tmp[0]
+                            fasScores[refSpec][tmp[1]].append(statistics.mean(scores))
+                            fasScores[querySpec][tmp[0]].append(statistics.mean(scores))
                             fasScores['all'][refSpec][querySpec].append(statistics.mean(scores))
     return(fasScores)
+
 
 def getGroupPairs(scoreDict):
     donePair = []
@@ -244,9 +265,6 @@ def calcCutoff(args):
     # parse fas output into cutoffs
     fasOutDir = '%s/core_orthologs/%s/%s/fas_dir/fasscore_dir' % (coreDir, coreSet, groupID)
     fasScores = parseFasOut(fasOutDir, groupRefSpec[groupID])
-    # print(groupID)
-    # print(groupRefSpec[groupID])
-    # print(fasScores)
     for key in fasScores:
         if key == 'all':
             groupPair = getGroupPairs(fasScores[key])
@@ -270,7 +288,8 @@ def calcCutoff(args):
                 groupOut.write('LCL\t%s\n' % fcatFn.roundTo4(LCL))
                 groupOut.write('UCL\t%s\n' % fcatFn.roundTo4(UCL))
         else:
-            singleOut.write('%s\t%s\t%s\n' % (key, fcatFn.roundTo4(statistics.mean(fasScores[key]['score'])), fasScores[key]['gene']))
+            for prot in fasScores[key]:
+                singleOut.write(f'{key}\t{fcatFn.roundTo4(statistics.mean(fasScores[key][prot]))}\t{prot}\n')
     # get mean and stddev length for each group
     coreTaxa = []
     groupFa = '%s/core_orthologs/%s/%s/%s.fa' % (coreDir, coreSet, groupID, groupID)
@@ -286,6 +305,7 @@ def calcCutoff(args):
     groupOut.close()
     # return list of taxa for this core group
     return(coreTaxa)
+
 
 def calcGroupCutoff(args):
     coreDir = os.path.abspath(args.coreDir)
