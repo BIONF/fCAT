@@ -44,7 +44,7 @@ Please ensure both Python and R are properly installed and accessible in your sy
 2. Create a new environment
 
 ```
-mamba create -n fcat python R -y
+mamba create -n fcat python r-base -c conda-forge -c bioconda -c defaults -y
 ```
 
 3. Activate the environment
