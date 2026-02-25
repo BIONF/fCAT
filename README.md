@@ -28,7 +28,38 @@ fCAT outputs both the summary result in a tabular text file and the phylogenetic
 
 # How to install
 
-*fCAT* tool is distributed as a python package called *fcat*. It is compatible with [Python ≥ v3.9](https://www.python.org/downloads/).
+*fCAT* tool is distributed as a python package named *fcat*.
+
+Requirements
+
+- [Python ≥ v3.12](https://www.python.org/downloads/)
+- [R](https://www.r-project.org)
+
+Please ensure both Python and R are properly installed and accessible in your system environment before installing *fCAT*.
+
+## Using a Conda Environment
+
+1. Follow [this instruction](https://mamba.readthedocs.io/en/latest/) to install Mamba or Micromamba (faster package manager for conda)
+
+2. Create a new environment
+
+```
+mamba create -n fcat python R -y
+```
+
+3. Activate the environment
+
+```
+mamba activate fcat
+```
+
+4. Install *fcat* using `pip`:
+
+```
+python3 -m pip install fcat
+```
+
+## Without conda
 
 You can install *fcat* using `pip`:
 ```
@@ -49,6 +80,13 @@ export PATH=$HOME/.local/bin:$PATH
 *__Note:__ fCAT requires [R](https://cran.r-project.org) to be present! Please make sure that you have R installed on your computer.*
 
 # Usage
+
+fCAT depends on the following external tools:
+
+- [fDOG](https://github.com/BIONF/fDOG)
+- [FAS](https://github.com/BIONF/FAS)
+
+Please make sure that both [fDOG](https://github.com/BIONF/fDOG/wiki/Installation#setup-fdog) and [FAS](https://github.com/BIONF/FAS/wiki/Setup) are successfully setup before using fCAT.
 
 The complete process of *fCAT* can be done using one function `fcat`
 ```
