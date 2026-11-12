@@ -136,6 +136,8 @@ def main():
     optional.add_argument('--noDomain', help='Not output feature domain files', action='store_true', default=False)
     optional.add_argument('--keep', help='Keep temporary phyloprofile data', action='store_true', default=False)
     optional.add_argument('--bidirectional', help=argparse.SUPPRESS, action='store_true', default=False)
+    optional.add_argument('--matchedSeed', help='If a reference species has several sequences in a core group: keep the score window and accept a candidate whose best reverse BLAST hit is any of them; that sequence is used as seed (fDOG --matchedSeed) and for the mode 2 cutoff. Without this option fCAT switches the score window off for such groups (--scoreCutoff 100)', action='store_true', default=False)
+    optional.add_argument('--windowFallback', help='If no hit within the score window passes the reverse search, also check the other top hits (fDOG --windowFallback)', action='store_true', default=False)
 
     args = parser.parse_args()
 

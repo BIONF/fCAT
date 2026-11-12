@@ -103,6 +103,14 @@ def mode2(ppFile, missingGr, coreDir, coreSet, queryID, outDir, fasDiff):
     refspecFile = '%s/%s/%s/last_refspec.txt' % (outDir, coreSet, queryID)
     for g in fcatFn.readFile(refspecFile):
         groupRefspec[g.split('\t')[0]] = g.split('\t')[1]
+    # get the refspec sequence used as seed for each group (only written by fcat --matchedSeed / --windowFallback)
+    groupSeed = {}
+    seedInfoFile = '%s/%s/%s/seed_info.txt' % (outDir, coreSet, queryID)
+    if os.path.exists(seedInfoFile):
+        for g in fcatFn.readFile(seedInfoFile)[1:]:
+            tmp = g.split('\t')
+            if len(tmp) >= 3:
+                groupSeed[tmp[0]] = tmp[2]
     # validate orthologs
     for line in fcatFn.readFile(ppFile):
         if len(line) > 0:
@@ -115,10 +123,18 @@ def mode2(ppFile, missingGr, coreDir, coreSet, queryID, outDir, fasDiff):
                 if os.path.exists(scoreFile):
                     meanRefspec = 0
                     fasRefspec = []
+                    seedCutoff = None
                     for l in fcatFn.readFile(scoreFile):
                         if l.split('\t')[0] == groupRefspec[groupID].strip():
                             fasRefspec.append(float(l.split('\t')[1].strip()))
-                    meanRefspec = round(statistics.mean(fasRefspec), 4)
+                            # cutoff of the refspec sequence that was used as seed for this group
+                            if groupID in groupSeed and len(l.split('\t')) > 2:
+                                if l.split('\t')[2].strip().split('|')[-1] == groupSeed[groupID]:
+                                    seedCutoff = float(l.split('\t')[1].strip())
+                    if not seedCutoff == None:
+                        meanRefspec = round(seedCutoff, 4)
+                    else:
+                        meanRefspec = round(statistics.mean(fasRefspec), 4)
                     if meanFas >= (meanRefspec - fasDiff):
                         assessment = addToDict(assessment, groupID, line.split('\t')[2], 'similar', meanFas, meanRefspec)
                         geneCat['similar'].append(line+'\t0')
