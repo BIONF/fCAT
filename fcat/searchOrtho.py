@@ -129,7 +129,7 @@ def readRefspecFile(refspecFile):
         groupRefspec[line.split('\t')[0]] = line.split('\t')[1]
     return(groupRefspec)
 
-def prepareJob(coreDir, coreSet, queryID, refspecList, outDir, coreTaxa_dir, annoDir, annoQuery, force, cpus):
+def prepareJob(coreDir, coreSet, queryID, refspecList, outDir, coreTaxa_dir, annoDir, annoQuery, force, cpus, matchedSeed = False, windowFallback = False):
     fdogJobs = []
     ignored = []
     groupRefspec = {}
@@ -148,7 +148,7 @@ def prepareJob(coreDir, coreSet, queryID, refspecList, outDir, coreTaxa_dir, ann
                 else:
                     outPath = '%s/fcatOutput/%s/%s/fdogOutput/%s' % (outDir, coreSet, queryID, refspec)
                     if not os.path.exists('%s/%s/%s.phyloprofile' % (outPath, groupID, groupID)) or force:
-                        fdogJobs.append([groupFa, groupID, refspec, outPath, coreTaxa_dir, hmmPath, searchTaxa_path, force])
+                        fdogJobs.append([groupFa, groupID, refspec, outPath, coreTaxa_dir, hmmPath, searchTaxa_path, force, matchedSeed, windowFallback])
                     groupRefspec[groupID] = refspec
     else:
         sys.exit('No core group found at %s' % (coreDir + '/core_orthologs/' + coreSet))
@@ -165,18 +165,45 @@ def countRefCore(refSpec, hmmPath, coreGroup):
 
 
 def runFdog(args):
-    (seqFile, jobName, refSpec, outPath, coreTaxa_path, hmmPath, searchTaxa_path, force) = args
+    (seqFile, jobName, refSpec, outPath, coreTaxa_path, hmmPath, searchTaxa_path, force, matchedSeed, windowFallback) = args
     fdog = 'fdog.run --seqFile %s --jobName %s --refspec %s --outpath %s --corepath %s --hmmpath %s --searchpath %s --fasOff --reuseCore --cpu 1' % (seqFile, jobName, refSpec, outPath, coreTaxa_path, hmmPath, searchTaxa_path)
     if force:
         fdog += ' --force'
     if countRefCore(refSpec, hmmPath, jobName) > 1:
-        fdog += ' --scoreCutoff 100' # set a low score cutoff to find more orthologs
+        if matchedSeed:
+            # keep fDOG's score window; accept a candidate if its best reverse BLAST hit
+            # is any of the refspec sequences of this group, and use that one as seed
+            fdog += ' --matchedSeed'
+        else:
+            fdog += ' --scoreCutoff 100' # set a low score cutoff to find more orthologs
+    if windowFallback:
+        # check hits below the score window only if no hit within the window is accepted
+        fdog += ' --windowFallback'
     fdog += ' > /dev/null 2>&1'
     try:
         subprocess.run([fdog], shell=True, check=True)
     except Exception as e:
         print(f'\033[91mProblem occurred while running fDOG for \'{jobName}\' core group:\033[0m\n{e}\nCommand used:\n{fdog}')
 
+
+def writeSeedInfo(outDir, coreSet, queryID, groupRefspec):
+    """ Collect the <groupID>.seed_info.tsv files written by fDOG (--matchedSeed / --windowFallback)
+    into fcatOutput/<coreSet>/<queryID>/seed_info.txt
+    Columns: groupID, refspec, seedID (refspec sequence used as seed), seedRank (position of the seed
+    among the refspec sequences of the group), fallback (1 = ortholog found only below the score window)
+    """
+    seedInfoFile = '%s/fcatOutput/%s/%s/seed_info.txt' % (outDir, coreSet, queryID)
+    with open(seedInfoFile, 'w') as out:
+        out.write('groupID\trefspec\tseedID\tseedRank\tfallback\n')
+        for groupID in sorted(groupRefspec):
+            refspec = groupRefspec[groupID]
+            infoFile = '%s/fcatOutput/%s/%s/fdogOutput/%s/%s.seed_info.tsv' % (outDir, coreSet, queryID, refspec, groupID)
+            if os.path.exists(infoFile):
+                for line in fcatFn.readFile(infoFile)[1:]:
+                    tmp = line.split('\t')
+                    if len(tmp) == 6 and tmp[1] == queryID and not tmp[3] == 'NA':
+                        out.write('%s\t%s\t%s\t%s\t%s\n' % (groupID, refspec, tmp[3], tmp[4], tmp[5]))
+    return(seedInfoFile)
 
 def outputMode(outDir, coreSet, queryID, force, approach):
     phyloprofileDir = '%s/fcatOutput/%s/%s/phyloprofileOutput' % (outDir, coreSet, queryID)
@@ -422,6 +449,8 @@ def searchOrtho(args):
         cpus = mp.cpu_count()-1
     force = args.force
     keep = args.keep
+    matchedSeed = getattr(args, 'matchedSeed', False)
+    windowFallback = getattr(args, 'windowFallback', False)
 
     currDir = os.getcwd()
 
@@ -444,7 +473,7 @@ def searchOrtho(args):
     print('Preparing...')
     groupRefspec = {}
     if status == 0:
-        (fdogJobs, ignored, groupRefspec) = prepareJob(coreDir, coreSet, queryID, refspecList, outDir, coreTaxa_dir, annoDir, annoQuery, force, cpus)
+        (fdogJobs, ignored, groupRefspec) = prepareJob(coreDir, coreSet, queryID, refspecList, outDir, coreTaxa_dir, annoDir, annoQuery, force, cpus, matchedSeed, windowFallback)
         print('Searching orthologs...')
         os.chdir('%s/fcatOutput/%s/%s' % (outDir, coreSet, queryID))
         fdogOut = []
@@ -470,6 +499,9 @@ def searchOrtho(args):
             for g in groupRefspec:
                 refspecFile.write('%s\t%s\n' % (g, groupRefspec[g]))
             refspecFile.close()
+        # write the refspec sequence used as seed for each group (and whether it was found by the fallback)
+        if (matchedSeed or windowFallback) and len(groupRefspec) > 0:
+            writeSeedInfo(outDir, coreSet, queryID, groupRefspec)
 
     # if not status == 2:
         # Calculating FAS scores between query orthologs and all sequences in each core group
@@ -520,6 +552,8 @@ def main():
     optional.add_argument('--cpus', help='Number of CPUs used for annotation. Default = 4', action='store', default=4, type=int)
     optional.add_argument('--force', help='Force overwrite existing data', action='store_true', default=False)
     optional.add_argument('--keep', help='Keep temporary phyloprofile data', action='store_true', default=False)
+    optional.add_argument('--matchedSeed', help='If a reference species has several sequences in a core group: keep the score window and accept a candidate whose best reverse BLAST hit is any of them; that sequence is used as seed (fDOG --matchedSeed). Without this option fCAT switches the score window off for such groups (--scoreCutoff 100)', action='store_true', default=False)
+    optional.add_argument('--windowFallback', help='If no hit within the score window passes the reverse search, also check the other top hits (fDOG --windowFallback)', action='store_true', default=False)
     args = parser.parse_args()
 
     start = time.time()
